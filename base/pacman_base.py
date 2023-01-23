@@ -10,6 +10,7 @@ import time
 import math
 import asyncio
 from timebudget import timebudget
+from base.v2a_base import *
 ##########################################################################
 #---------------PACMAN UART INVERSION/DISABLE/ENABLE---------------------#
 ##########################################################################
@@ -79,9 +80,9 @@ def power_up(io, io_group, pacman_version, ramp, tile, vdda_dac, vddd_dac, \
              ramp_wait=30, warm_wait=20):
                 
     io.set_reg(0x00000014, 1, io_group=io_group)
-    io.set_reg(0x00000010, 0, io_group=io_group)
+    #io.set_reg(0x00000010, 0, io_group=io_group) 
     bits=list('1000000000')
-    if ramp==True:
+    if ramp==True and pacman_version=='v1rev4':
         io.reset_larpix(length=reset_length, io_group=io_group)
         clock_start=time.time()
         for i in tile:
@@ -142,19 +143,19 @@ def power_up(io, io_group, pacman_version, ramp, tile, vdda_dac, vddd_dac, \
             if pacman_version=='v1rev4':
                 io.set_reg(0x24010+(i-1), vdda_dac[i-1], io_group=io_group)
                 io.set_reg(0x24020+(i-1), vddd_dac[i-1], io_group=io_group)
-            elif pacman_version=='v1rev3' or pacman_version=='v1revS1':
-                vdda_offset=(i-1)*2
-                vddd_offset=((i-1)*2)+1
-                io.set_reg(0x24130+vdda_offset, vdda_dac[i-1], \
+            elif pacman_version in ['v1rev3', 'v1rev3b', 'v1revS1']:
+                io.set_reg(vdda_reg[i], vdda_dac[i-1], \
                            io_group=io_group)
-                io.set_reg(0x24130+vddd_offset, vdda_dac[i-1], \
+                io.set_reg(vddd_reg[i], vddd_dac[i-1], \
                            io_group=io_group)
             else:
                 print('WARNING: version ',pacman_version,' unknown')
                 return  
             bits[-1*i]='1'
+        print(bits)
         io.set_reg(0x00000010, int("".join(bits),2), io_group=io_group)
         io.reset_larpix(length=64, io_group=io_group)
+        io.set_reg(0x00000018,0b11111111111111111111111111111111)
     return
 
 

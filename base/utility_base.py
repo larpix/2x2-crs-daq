@@ -261,6 +261,9 @@ def unique_to_chip_key(i):
 def io_channel_to_tile(io_channel):
     return int(np.floor((io_channel-1-((io_channel-1)%4))/4+1))
 
+def io_channel_list_to_tile(io_channel):
+    return np.array(np.floor((io_channel-1-((io_channel-1)%4))/4+1)).astype(int)
+
 
 
 def io_channel_to_root_chip(io_channel, asic_version):

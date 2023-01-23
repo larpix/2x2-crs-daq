@@ -11,7 +11,7 @@ import numpy as np
 from base import ana_base
 #@profile
 def regulate_rate_fractional(c, io, io_group, set_rate, disable, sample_time=0.5):
-    return disable
+    #return disable
     io.set_reg(0x18, 0, io_group=io_group)
     io.group_packets_by_io_group=True
     io.double_send_packets=True

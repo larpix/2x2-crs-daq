@@ -528,12 +528,12 @@ def miso_us_chip_id_list(chip2chip_pair, miso_us):
 
 
 def write_network_to_file(c, file_prefix, io_group_pacman_tile, unconfigured, \
-                          layout="2.5.1"):
+                          layout="2.5.1", asic_version='2b'):
 
     d=dict()
     d["_config_type"]="controller"
     d["name"]=file_prefix
-    d["asic_version"]="2b"
+    d["asic_version"]=asic_version
     d["layout"]=layout
 
     c = configure_asic_network_links(c)
