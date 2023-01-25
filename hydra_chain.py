@@ -13,6 +13,8 @@ import json
 from base import v2a_base
 from base.v2a_base import *
 
+arr = graphs.NumberedArrangement()
+
 def string_to_chips_list(string):
         chiplist = string.split(',')
         return [int(chip) for chip in chiplist]
@@ -22,8 +24,6 @@ def convert_voltage_for_pacman(voltage):
         v = voltage
         if v > max_voltage: v=max_voltage
         return int( (v/max_voltage)*max_scale )
-
-arr = graphs.NumberedArrangement()
 
 def get_temp_key(io_group, io_channel):
         return larpix.key.Key(io_group, io_channel, 1)
@@ -245,10 +245,11 @@ def test_network(c, io_group, io_channels, paths):
                         c[next_key].config.enable_miso_differential =[1,1,1,1]
                         c.write_configuration(next_key, 'enable_miso_downstream')
 
-                        #if (path[step-1], path[step]) in arr.good_connections:
+                        if (path[step-1], path[step]) in arr.good_connections:
                         #        #already verified links
                         #        print(next_key, 'already verified')
-                        #        continue
+                                pbar.update(1)
+                                continue
 
                         ok, diff = c.enforce_registers([(next_key, 122)], timeout=0.5, n=3)
                         pbar.update(1)
@@ -264,32 +265,56 @@ def test_network(c, io_group, io_channels, paths):
         pbar.close()
         return all(valid)
 
-def main(pacman_tile, io_group, pacman_version, vdda=0, exclude=None):
+def main(pacman_tile, io_group, pacman_version, vdda=0, config_name=None, exclude=None):
+    
     d = {'_config_type' : 'controller', '_include':[]}
     if isinstance(pacman_tile, list):
         if exclude is None: exclude = {t : None for t in pacman_tile}
         for tile in pacman_tile:
-            d['_include'].append(hydra_chain(io_group, tile, pacman_version, vdda, exclude[tile]))
+            if not tile in exclude.keys(): exclude[tile]=None
+            d['_include'].append(hydra_chain(io_group, tile, pacman_version, vdda, exclude[tile], first=True))
     if isinstance(pacman_tile, int):
-        d['_include'].append(hydra_chain(io_group, pacman_tile, pacman_version, vdda, exclude))
+        d['_include'].append(hydra_chain(io_group, pacman_tile, pacman_version, vdda, exclude, first=True))
     
-    config_name = 'config-{}.json'.format(time.strftime("%Y_%m_%d_%H_%M_%Z"))
-    with open(config_name, 'w') as f: json.dump(d, f)
+    fname =  'iog-{}'.format(io_group)
 
-    c = larpix.Controller()
-    c.io = larpix.io.PACMAN_IO(relaxed=True)
-    if isinstance(pacman_tile, list): pacman_base.enable_pacman_uart_from_tile(c.io, io_group, pacman_tile )
-    else: pacman_base.enable_pacman_uart_from_tile(c.io, io_group, [pacman_tile] )
-
-    c = v2a_base.main(controller_config=config_name, enforce=True)
-    c = v2a_base.reset(c, config_name, enforce=True)
-
-
-    c.io.set_reg(0x00000010, 0, io_group=io_group)
-    return c, c.io   
-
-def hydra_chain(io_group, pacman_tile, pacman_version, vdda, exclude): 
+    if config_name is None:  #no input file to incluce
+        fname+='config-{}.json'.format(time.strftime("%Y_%m_%d_%H_%M_%Z"))
+        with open(fname, 'w') as f: json.dump(d, f)
+        return fname
+    else:
+        ed = {}
+        try:
+            with open(config_name, 'r')  as f: ed = json.load(f)
+            for file in ed['_include']:
+                d['_include'].append(file)
+            with open(fname, 'w') as f: json.dump(d, f) 
+            print('writing', fname)
+        except:
+            fname+=config_name
+            with open(fname, 'w') as f: json.dump(d, f) 
+            print('writing', fname)
+            return fname
         
+    #c = larpix.Controller()
+    #c.io = larpix.io.PACMAN_IO(relaxed=True)
+    
+    #if isinstance(pacman_tile, list): pacman_base.enable_pacman_uart_from_tile(c.io, io_group, pacman_tile )
+    #else: pacman_base.enable_pacman_uart_from_tile(c.io, io_group, [pacman_tile] )
+
+    #c = v2a_base.main(controller_config=config_name, enforce=True)
+    #c = v2a_base.reset(c, config_name, enforce=True)
+
+    #c.io.set_reg(0x00000010, 0, io_group=io_group)
+    
+    return fname
+
+def hydra_chain(io_group, pacman_tile, pacman_version, vdda, exclude=None, first=False): 
+        if first: arr.clear()
+        if not exclude is None:
+            if type(exclude)==int: arr.add_excluded_chip(exclude)
+            else:
+                for chip in exclude: arr.add_excluded_chip(chip)
         io_channels = [ 1 + 4*(pacman_tile - 1) + n for n in range(4)]
         print("--------------------------------------------")
         print("get_initial_controller(",io_group,",",io_channels,",",vdda,",",pacman_version,")")
@@ -343,7 +368,7 @@ if __name__ == '__main__':
         parser.add_argument('--pacman_version', default='v1rev3b', type=str, help='''Pacman version; v1rev2 for SingleCube; otherwise, v1rev3''')
         parser.add_argument('--vdda', default=0, type=float, help='''VDDA setting during test''')
         parser.add_argument('--io_group', default=1, type=int, help='''IO group to perform test on''')
-        parser.add_argument('--exclude', default=None, type=str, help='''Chips to exclude chip from test and networks, formatted chip_id_1,chip_id_2,...''')
+        parser.add_argument('--exclude', default=None, type=int, help='''Chips to exclude chip from test and networks, formatted chip_id_1,chip_id_2,...''')
         args = parser.parse_args()
         c = main(**vars(args))
         ###### disable tile power

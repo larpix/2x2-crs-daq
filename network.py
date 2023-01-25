@@ -31,13 +31,13 @@ _current_dir_='/home/daq/PACMANv1rev4/commission/'
 _destination_dir_='/data/LArPix/Module2_Nov2022/TPC12_run2/'
 #_io_group_pacman_tile_={9:[1]}
 #_io_group_pacman_tile_={2:list(range(1,9,1))}
-_io_group_pacman_tile_={1:list(range(1,2,1))}
+_io_group_pacman_tile_={1:list(range(1,3,1))}
 #_io_group_pacman_tile_={1:list(range(1,3,1)), 2:list(range(1,3,1))}
 _io_group_asic_version_={1:2, 2:2}
 _vdda_dac_=[47000]*8
 _vddd_dac_=[31000]*8
 _iog_pacman_version_={1: 'v1rev3b', 2 : 'v1rev3b'}
-
+_iog_exclude={1: {1:43}, 2: {}}
 
 
 def main(file_prefix=_default_file_prefix, \
@@ -53,7 +53,12 @@ def main(file_prefix=_default_file_prefix, \
    
     c = larpix.Controller()
     c.io = larpix.io.PACMAN_IO(relaxed=True)
-    
+   
+    if controller_config is None:
+        now=time.strftime("%Y_%m_%d_%H_%M_%Z")
+        config_name='controller-config-'+now+'.json'
+
+
     if disable_logger==False:
         now=time.strftime("%Y_%m_%d_%H_%M_%Z")
         if file_prefix!=None: fname=file_prefix+'-network-config-'+now+'.h5'
@@ -137,17 +142,24 @@ def main(file_prefix=_default_file_prefix, \
                 c.logger.disable()
                 c.reads=[]
                 shutil.move(_current_dir_+fname, _destination_dir_+fname)
-        
+            
+            return c, c.io
+
         elif _io_group_asic_version_[iog]==2:  
             print('configuring v2a network...')
             if controller_config is None: 
-                c,io = hydra_chain.main(io_group=iog, pacman_tile=_io_group_pacman_tile_[iog], pacman_version=_iog_pacman_version_[iog])
+                config_name = hydra_chain.main(io_group=iog, pacman_tile=_io_group_pacman_tile_[iog], pacman_version=_iog_pacman_version_[iog], config_name=config_name, exclude=_iog_exclude[iog])
+                time.sleep(1)
             else: 
                 print('starting main')
-                c = v2a_base.main(c, controller_config=controller_config, pacman_version=_iog_pacman_version_[iog])
+                c = v2a_base.main(controller_config=controller_config, pacman_version=_iog_pacman_version_[iog])
                 io = c.io
-        
-    return c, c.io
+                return c, c.io
+
+        c = v2a_base.main(controller_config=config_name, pacman_version=_iog_pacman_version_[iog])
+        io = c.io
+
+        return c, io
 
     
 

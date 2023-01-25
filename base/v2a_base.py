@@ -218,17 +218,17 @@ def reset(c, config=None, enforce=False, verbose=False, modify_power=False, vdda
     if hasattr(c,'logger') and c.logger: c.logger.record_configs(list(c.chips.values()))
     return c
         
-def main(c=None, controller_config=_default_controller_config, pacman_version=_default_pacman_version, logger=_default_logger, vdda=46020, vddd=40605, reset=_default_reset, enforce=True, no_enforce=False, verbose=True, modify_power=True, return_bad_keys=False, retry=0, **kwargs):
+def main(controller_config=_default_controller_config, pacman_version=_default_pacman_version, logger=_default_logger, vdda=46020, vddd=40605, reset=_default_reset, enforce=True, no_enforce=False, verbose=True, modify_power=True, return_bad_keys=False, retry=0, **kwargs):
     if verbose: print('[START BASE]')
     ###### create controller with pacman io
-    print(pacman_version)
-    if c is None: 
-        c = larpix.Controller()
+    print(pacman_version) 
+    c = larpix.Controller()
     c.io = larpix.io.PACMAN_IO(relaxed=True)
     if no_enforce: enforce = False
 
      ##### setup hydra network configuration
     if controller_config is None:
+        print('no controller config!')
         c.add_chip(larpix.Key(1, _default_io_channel, _default_chip_id))
         c.add_network_node(1, _default_io_channel, c.network_names, 'ext', root=True)
         c.add_network_link(1, _default_io_channel, 'miso_us', ('ext',_default_chip_id), 0)

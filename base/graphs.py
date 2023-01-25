@@ -41,6 +41,7 @@ class NumberedArrangement:
 		self.n_maps = len(self.all_dir_maps)
 		#use grid points to create path
 		self.grid = [ [None for row in range(self.nrows)] for col in range(self.ncols) ]
+		return
 
 	def get_mover(self, ind1, ind2):
 		for mover in self.base_dir_map:
@@ -94,6 +95,11 @@ class NumberedArrangement:
 	def col(self, chip):
 		r, c = self.row_col(chip)
 		return c
+
+	def clear(self):
+		self.excluded_chips = set()
+		self.excluded_links = set()
+		self.good_connections = set()
 
 	def row_col(self, index):
 		row_index = (index - self.start_index) // self.ncols
