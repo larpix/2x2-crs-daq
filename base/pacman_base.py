@@ -51,6 +51,15 @@ def enable_pacman_uart_from_tile(io, io_group, tile):
 
 
 
+def enable_pacman_uart_from_io_channels(io, io_group, io_channels):
+    bits=list('00000000000000000000000000000000')
+    for ioc in io_channels:
+        bits[-1*ioc]='1'
+    io.set_reg(0x18, int("".join(bits),2), io_group=io_group)
+    return
+
+
+
 def enable_pacman_uart_from_io_channel(io, io_group, io_channels):
     bits=list('00000000000000000000000000000000')
     for io_channel in io_channels:

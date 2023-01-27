@@ -17,7 +17,7 @@ def flush_data(c, runtime=0.1, rate_limit=0., max_iterations=10):
         if len(c.reads[-1])/runtime<=rate_limit:
             break
 
-def data(c, runtime, packet, runtype, LRS):
+def data(c, runtime, packet, runtype, LRS, record_configs=True):
     now=time.strftime("%Y_%m_%d_%H_%M_%Z")
     if packet==True:
         fname=runtype+'-packets-'+now+'.h5'
@@ -35,6 +35,9 @@ def data(c, runtime, packet, runtype, LRS):
         c.io.join()
         rhdf5.to_rawfile(filename=c.io.raw_filename, \
                          io_version=pacman_msg_fmt.latest_version)
+        if record_configs:
+            c.loggertempA = larpix.logger.HDF5Logger(c.io.raw_filename)
+            c.loggertempA.record_configs(list(c.chips.values()))
         print('filename: ',c.io.raw_filename)
         run_start=time.time()
         c.start_listening()
@@ -62,6 +65,9 @@ def data(c, runtime, packet, runtype, LRS):
             time.sleep(0.3)
         c.read()
         c.io.join()
+        if record_configs:
+            c.loggertempB = larpix.logger.HDF5Logger(c.io.raw_filename)
+            c.loggertempB.record_configs(list(c.chips.values()))
     return fname
         
 
