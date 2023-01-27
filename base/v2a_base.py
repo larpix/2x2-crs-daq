@@ -240,7 +240,8 @@ def main(controller_config=_default_controller_config, pacman_version=_default_p
     for io_group in c.network.keys():
         io_channels = np.array(list(c.network[io_group].keys())).astype(int)
         tiles= utility_base.io_channel_list_to_tile(io_channels)
-        pacman_base.power_up(c.io, io_group, pacman_version, tile=tiles, vdda_dac=[vdda]*len(tiles), vddd_dac=[vddd]*len(tiles), ramp=False)         
+        #pacman_base.power_up(c.io, io_group, pacman_version, tile=tiles, vdda_dac=[vdda]*len(tiles), vddd_dac=[vddd]*len(tiles), ramp=False)         
+        set_pacman_power(c, io_group)
     if logger:
         if verbose: print('logger enabled')
         if 'filename' in kwargs: c.logger = larpix.logger.HDF5Logger(filename=kwargs['filename'])
@@ -301,6 +302,7 @@ def main(controller_config=_default_controller_config, pacman_version=_default_p
     flush_data(c)
 
     if not enforce: 
+        print('enforcing:', enforce)
         if hasattr(c,'logger') and c.logger: c.logger.record_configs(list(c.chips.values()))
         if verbose: print('[FINISH BASE]')
         return c
@@ -311,12 +313,12 @@ def main(controller_config=_default_controller_config, pacman_version=_default_p
         chip_registers = [(chip_key, i) for i in [82,83,125,129]]
         ok,diff = c.enforce_registers(chip_registers, timeout=0.1, n=10, n_verify=10)
         if not ok:
-            print(diff,'\nconfig error on chips',list(diff.keys()))
-            if return_bad_keys: return c, list(diff.keys()) 
+            print(diff,'\nconfig error on chips',list(diff.keys())) 
+            print('retrying...')
             if retry < 5:
                 retry = retry+1
                 print('Retry attempt # ',retry)
-                return main(controller_config, pacman_version, logger, vdda, reset, enforce, no_enforce, verbose, modify_power, retry=retry)
+                return main(controller_config=controller_config, pacman_version=pacman_version, logger=logger, vdda=vdda, reset=reset, enforce=True, no_enforce=False, verbose=verbose, modify_power=modify_power, retry=retry)
             else: raise RuntimeError(diff,'\nconfig error on chips',list(diff.keys()))
     c.io.double_send_packets = False
     c.io.group_packets_by_io_group = False

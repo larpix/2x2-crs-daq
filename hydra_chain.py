@@ -276,10 +276,10 @@ def main(pacman_tile, io_group, pacman_version, vdda=0, config_name=None, exclud
     if isinstance(pacman_tile, int):
         d['_include'].append(hydra_chain(io_group, pacman_tile, pacman_version, vdda, exclude, first=True))
     
-    fname =  'iog-{}'.format(io_group)
+    fname=config_name
 
     if config_name is None:  #no input file to incluce
-        fname+='config-{}.json'.format(time.strftime("%Y_%m_%d_%H_%M_%Z"))
+        fname='config-{}.json'.format(time.strftime("%Y_%m_%d_%H_%M_%Z"))
         with open(fname, 'w') as f: json.dump(d, f)
         return fname
     else:
@@ -291,7 +291,6 @@ def main(pacman_tile, io_group, pacman_version, vdda=0, config_name=None, exclud
             with open(fname, 'w') as f: json.dump(d, f) 
             print('writing', fname)
         except:
-            fname+=config_name
             with open(fname, 'w') as f: json.dump(d, f) 
             print('writing', fname)
             return fname
@@ -316,6 +315,7 @@ def hydra_chain(io_group, pacman_tile, pacman_version, vdda, exclude=None, first
             else:
                 for chip in exclude: arr.add_excluded_chip(chip)
         io_channels = [ 1 + 4*(pacman_tile - 1) + n for n in range(4)]
+        #io_channels = [9, 11, 12]
         print("--------------------------------------------")
         print("get_initial_controller(",io_group,",",io_channels,",",vdda,",",pacman_version,")")
         c = get_initial_controller(io_group, io_channels, vdda, pacman_version)
@@ -355,7 +355,7 @@ def hydra_chain(io_group, pacman_tile, pacman_version, vdda, exclude=None, first
         #existing network is full initialized, start tests
         ######
         ##generating config file
-        _name = "pacman-tile-"+str(pacman_tile)+"-hydra-network.json"
+        _name = "iog-{}-".format(io_group)+"pacman-tile-"+str(pacman_tile)+"-hydra-network.json"
 
         if True:
                 print('writing configuration', _name + ', including', sum(  [len(path) for path in paths] ), 'chips'  )

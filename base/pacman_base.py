@@ -78,7 +78,7 @@ def disable_all_pacman_uart(io, io_group):
 def power_up(io, io_group, pacman_version, ramp, tile, vdda_dac, vddd_dac, \
              reset_length=600000000, vdda_step=1000, vddd_step=1000, \
              ramp_wait=30, warm_wait=20):
-                
+    print(io, io_group, pacman_version, ramp, tile, vdda_dac, vddd_dac)   
     io.set_reg(0x00000014, 1, io_group=io_group)
     #io.set_reg(0x00000010, 0, io_group=io_group) 
     bits=list('1000000000')

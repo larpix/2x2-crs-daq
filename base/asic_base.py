@@ -10,13 +10,19 @@ import numpy as np
 #import asyncio
 from base import ana_base
 #@profile
-def regulate_rate_fractional(c, io, io_group, set_rate, disable, sample_time=0.5):
+def regulate_rate_fractional(c, io, io_group, set_rate, disable, sample_time=0.5, ioch=None):
     #return disable
     io.set_reg(0x18, 0, io_group=io_group)
     io.group_packets_by_io_group=True
     io.double_send_packets=True
-    pacman_tile = utility_base.all_chip_key_to_tile(c, io_group)
-    pacman_base.enable_pacman_uart_from_tile(io, io_group, pacman_tile)
+    pacman_tile = []
+    if ioch==None: 
+        pacman_tile = utility_base.all_chip_key_to_tile(c, io_group) 
+        pacman_base.enable_pacman_uart_from_tile(io, io_group, pacman_tile)
+    else:
+        ##print(ioch, type(ioch))
+        pacman_base.enable_pacman_uart_from_io_channel(io, io_group, ioch)
+        time.sleep(1)
     flag=True
     counter=0
     while flag and counter<5:
@@ -30,6 +36,7 @@ def regulate_rate_fractional(c, io, io_group, set_rate, disable, sample_time=0.5
         count=0
         total_rate = len(triggers)/sample_time
         print('Total trigger rate:', total_rate, 'Hz')
+        chips_to_enforce=[]
         for chip_key, channel in set(map(tuple,triggers)):
             if chip_key not in c.chips: continue
             rate = triggers.count([chip_key,channel])/sample_time
@@ -37,9 +44,17 @@ def regulate_rate_fractional(c, io, io_group, set_rate, disable, sample_time=0.5
                 disable_channel_csa_trigger(c, chip_key, channel)
                 if chip_key not in disable: disable[chip_key]=[]
                 disable[chip_key].append(channel)
+                c[chip_key].config.channel_mask[channel]=1
+                c[chip_key].config.csa_enable[channel]=0
                 count+=1
                 print('DISABLE ',chip_key,'  ',channel,'\trate: ',rate,' Hz')
-        c.reads=[]
+        c.reads=[] 
+        c.enforce_configuration(chips_to_enforce, timeout=0.4, n=5)
+        dname = 'disable-current.json'
+        print('Saving disabled list: {}'.format(dname))
+        new_disable = {}
+        for key in disable.keys(): new_disable[str(key)]=disable[key]
+        with open(dname, 'w') as f: json.dump(new_disable, f)
         if count==0: flag=False
     io.set_reg(0x18, 0, io_group=io_group)
     io.group_packets_by_io_group=False
@@ -473,6 +488,43 @@ def debug_disable_response_trigger_config_by_io_channel(c, io, chips):
     io.double_send_packets=False    
     return ok, diff
 
+def enable_fixed_register_trigger_config_by_io_channel(c, io, chips,\
+                                                 vref_dac=185, \
+                                                 vcm_dac=50, vdda=1650.,\
+                                                 periodic_reset_cycles=6400, \
+                                                 pedestal=None,\
+                                                 disabled=None,\
+                                                 trim_dac=None, threshold_global=None, cryo=True):
+
+    print('ENABLING CONFIG: trim_dac={}, global_threshold={}'.format(trim_dac, threshold_global) )
+    io.set_reg(0x18, 0, io_group=chips[0].io_group)
+    chip_config_pairs=[]
+    for chip_key in chips:
+        initial_config=deepcopy(c[chip_key].config)
+        c[chip_key].config.threshold_global=threshold_global
+        c[chip_key].config.pixel_trim_dac=[trim_dac]*64
+        c[chip_key].config.channel_mask=[1]*64
+        c[chip_key].config.vref_dac=vref_dac
+        c[chip_key].config.vcm_dac=vcm_dac
+        c[chip_key].config.enable_periodic_reset=0
+        c[chip_key].config.enable_rolling_periodic_reset=0
+        c[chip_key].config.enable_hit_veto=1
+        chip_config_pairs.append((chip_key,initial_config))
+
+    io.group_packets_by_io_group=True
+    io.double_send_packets=True
+    io.set_reg(0x18, 2**(chips[0].io_channel-1), io_group=chips[0].io_group)
+        
+    chip_reg_pairs=c.differential_write_configuration(chip_config_pairs, \
+                                                      write_read=0, \
+                                                      connection_delay=0.01)
+    for chip_key in chips:
+        ok, diff = utility_base.reconcile_configuration(c, chip_key, False)
+    io.set_reg(0x18, 0, io_group=chips[0].io_group)
+    io.group_packets_by_io_group=False
+    io.double_send_packets=False    
+    return ok, diff
+
 
 def enable_response_trigger_config_by_io_channel(c, io, chips, vref_dac=185, \
                                                  vcm_dac=50, vdda=1650.,\
@@ -747,16 +799,19 @@ def enable_self_triggering(c, io, io_group, disabled, set_rate=None):
     io.group_packets_by_io_group=True
     io.double_send_packets=True
     io_channels_to_enable = list(utility_base.all_io_channels(c, io_group))
+    for ioc in io_channels_to_enable:
+        ##evaluate rate and disable channels here if flag is set!!!
+        pacman_base.enable_pacman_uart_from_io_channel(io, io_group, [ioc])
+        if not (set_rate is None):
+            print('Regulate rate on io_channel:', ioc)
+            disabled = regulate_rate_fractional(c, io, io_group, set_rate, disabled, sample_time=0.5, ioch=[ioc])
+
     pacman_base.enable_pacman_uart_from_io_channel(io, io_group, io_channels_to_enable)
     c.multi_write_configuration(chip_config_pairs_write_first)
     c.multi_write_configuration(chip_config_pairs)
 
 
-    ##evaluate rate and disable channels here if flag is set!!!
-    if not (set_rate is None):
-        disabled = regulate_rate_fractional(c, io, io_group, set_rate, disabled, sample_time=0.05)
-    
-    #for chip_key, chip in reversed(c.chips.items()):
+        #for chip_key, chip in reversed(c.chips.items()):
     #    if chip_key in disabled.keys():
             #print(chip.config.csa_enable)    
 
