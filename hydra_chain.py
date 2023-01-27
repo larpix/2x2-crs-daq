@@ -138,7 +138,8 @@ def get_initial_controller(io_group, io_channels, vdda=0, pacman_version='v1rev3
                 c.io.set_uart_clock_ratio(io_channel, clk_ctrl_2_clk_ratio_map[0], io_group=io_group)
                 print("setting uart clock ratio to:",clk_ctrl_2_clk_ratio_map[0]) 
         ###################################################################################
-        pacman_base.enable_pacman_uart_from_tile(c.io, io_group, [tile] )
+        #pacman_base.enable_pacman_uart_from_tile(c.io, io_group, [tile] )
+        pacman_base.enable_pacman_uart_from_io_channels(c.io, io_group, io_channels )
         
         return c
 
@@ -366,7 +367,7 @@ if __name__ == '__main__':
         parser = argparse.ArgumentParser()
         parser.add_argument('--pacman_tile', default=1, type=int, help='''Pacman software tile number; 1-8  for Pacman v1rev3; 1 for Pacman v1rev2''')
         parser.add_argument('--pacman_version', default='v1rev3b', type=str, help='''Pacman version; v1rev2 for SingleCube; otherwise, v1rev3''')
-        parser.add_argument('--vdda', default=0, type=float, help='''VDDA setting during test''')
+        parser.add_argument('--vdda', default=0, type=float, help='''VDDA setting during test [V]''')
         parser.add_argument('--io_group', default=1, type=int, help='''IO group to perform test on''')
         parser.add_argument('--exclude', default=None, type=int, help='''Chips to exclude chip from test and networks, formatted chip_id_1,chip_id_2,...''')
         args = parser.parse_args()
