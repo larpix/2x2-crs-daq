@@ -28,7 +28,7 @@ _default_tx_slice=15
 _default_r_term=2
 _default_i_rx=8
 
-_current_dir_='/home/daq/PACMANv1rev3b/commission/2x2-crs-daq/'
+_current_dir_='/home/daq/PACMANv1rev3b/commission/take2/2x2-crs-daq/'
 _destination_dir_='/data/LArPix/Module3_Feb2023/commission/'
 
 
@@ -116,6 +116,7 @@ def main(LRS=_default_LRS, \
         shutil.move(_current_dir_+c.logger.filename, _destination_dir_+c.logger.filename)
 
     ctr=0
+    
     while ctr<file_count:
         for iog in _io_group_pacman_tile_.keys():
             pacman_base.enable_pacman_uart_from_tile(io, iog, \

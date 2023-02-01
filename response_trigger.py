@@ -30,7 +30,7 @@ _default_tx_diff=0
 _default_tx_slice=15
 _default_r_term=2
 _default_i_rx=8
-_current_dir_='/home/daq/PACMANv1rev3b/commission/2x2-crs-daq/'
+_current_dir_='/home/daq/PACMANv1rev3b/commission/take2/2x2-crs-daq/'
 _destination_dir_='/data/LArPix/Module3_Feb2023/commission/'
 
 #_io_group_pacman_tile_={1:list(range(1,9,1))}
@@ -66,6 +66,8 @@ def main(LRS=_default_LRS, \
          tx_slice=_default_tx_slice, \
          r_term=_default_r_term, \
          i_rx=_default_i_rx, \
+         pixel_trim_dict=None,\
+         global_offset_dict=None,\
          calo_threshold=None,\
          calo_measured_json=None,\
          controller_config=None,\
@@ -75,7 +77,13 @@ def main(LRS=_default_LRS, \
         print('Input pedestal JSON file required by commandline argument. \n EXITING.')
         return
     io = None
-    
+    global_offsets={}
+    pixel_trim_slope={}
+
+    with open(pixel_trim_dict, 'r') as f: pixel_trim_slope = json.load(f)
+    with open(global_offset_dict, 'r') as f: global_offsets = json.load(f)
+
+ 
     calo_measured = {}
     if not (calo_measured_json is None): 
         with open(calo_measured_json, 'r') as calofile: 
@@ -93,23 +101,6 @@ def main(LRS=_default_LRS, \
     
     print('****', 16*100-len(c.chips), ' missing chips') 
 
-    for chip_key in c.chips:
-        if chip_key.chip_id in [21,41,71,91]: continue
-        tx_us = c[chip_key].config.enable_piso_upstream
-        tx_ds = c[chip_key].config.enable_piso_downstream
-        tx=[0]*4
-        for i in range(4):
-            if tx_us[i]==1 or tx_ds[i]==1: tx[i]==1
-        registers_to_write=[]
-        for piso in range(len(tx)):
-            if tx[piso]==0: continue
-            setattr(c[chip_key].config,f'i_tx_diff{piso}', tx_diff)
-            registers_to_write.append(c[chip_key].config.register_map[f'i_tx_diff{piso}'])
-            setattr(c[chip_key].config,f'tx_slices{piso}', tx_slice)
-            registers_to_write.append(c[chip_key].config.register_map[f'tx_slices{piso}'])
-        for reg in registers_to_write:
-            c.write_configuration(chip_key,reg)
-            c.write_configuration(chip_key,reg)
 
     if disable_logger==False:
         now=time.strftime("%Y_%m_%d_%H_%M_%Z")
@@ -137,7 +128,7 @@ def main(LRS=_default_LRS, \
         ok, diff=asic_base.enable_response_trigger_config_by_io_channel(c, io,\
                                                                         iog_ioc[g_c],
                                                                         vref_dac, vcm_dac, vdda, periodic_reset_cycles, pedestal, disabled, target,\
-                                                                        calo_threshold=calo_threshold, calo_measured=calo_measured)
+                                                                        global_offset=global_offsets, pixel_trim=pixel_trim_slope, calo_threshold=calo_threshold, calo_measured=calo_measured)
 
         if not ok:
             for key in diff.keys():
@@ -185,6 +176,11 @@ def main(LRS=_default_LRS, \
 if __name__=='__main__':
     signal(SIGINT, ctrlc_handler)
     parser = argparse.ArgumentParser()
+    parser.add_argument('--pixel_trim_dict', default=None, \
+                        type=str, help='''Pixel Trim dict''')
+    parser.add_argument('--global_offset_dict', default=None, \
+                        type=str, help='''Pixel Trim dict''')
+
     parser.add_argument('--controller_config', default=None, \
                         type=str, help='''Controller config for v2a tiles only''')
 
@@ -237,7 +233,7 @@ if __name__=='__main__':
     parser.add_argument('--calo_measured_json', \
                         default=None, \
                         type=str, \
-                        help='''JSON file containing calibration measured thresholds''')
+                        help='''JSON file containing calibration measured thresholds formatted as {chip_key : [threshold]*64}''')
     parser.add_argument('--r_term', \
                         default=_default_r_term, \
                         type=int, \

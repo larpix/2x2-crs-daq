@@ -46,7 +46,7 @@ def main(file1, file2, tag1=None, tag2=None):
         else: fd[key] = d2[key]
 
     with open('full-disable.json', 'w') as f:
-        json.dump(fd, f)
+        json.dump(fd, f, indent=4)
     
 if __name__=='__main__':
     if len(sys.argv)==3:

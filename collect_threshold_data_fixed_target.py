@@ -16,9 +16,10 @@ _default_LRS=False #True
 _default_file_prefix='self_trigger_NAME_ME'
 _default_disable_logger=False
 _default_verbose=False
+_default_pedestal_json=None
 _default_disabled_json=None
 _default_target=60 #75
-_default_runtime=1600
+_default_runtime=1200
 _default_file_count=1
 _default_periodic_reset_cycles=4096
 _default_vdda=1650.
@@ -39,7 +40,11 @@ _io_group_pacman_tile_={1:list(range(1,9,1)), 2:list(range(1,9,1))}
 _pacman_version_='v1rev3b'
 _asic_version_='2'
 
-scan_threshold_global_trim_dac=[ (100, 0) ]# , (110, 0), (100, 0),(90,0), (80, 0), (75, 30), (75, 25), (75, 20), (75, 15), (75, 10), (75, 5), (75,0)]
+#scan_threshold_global_trim_dac=[ (60, 30), (60, 25), (60, 20), (60, 15), (60, 10), (60, 5), (60,0), (45, 30), (45, 25), (45, 20), (45, 15), (45, 10), (45, 5), (45,0), (30, 30), (30, 25), (30, 20), (30, 15), (30, 10), (30, 5), (30,0)]
+
+#scan_threshold_global_trim_dac=[ (90, 30), (90, 25), (90, 20), (90, 15), (90, 10), (90, 5), (90,0)]
+
+target_vals=[120, 100, 80, 60, 40]
 
 global oldfilename
 
@@ -68,11 +73,24 @@ def main(LRS=_default_LRS, \
          i_rx=_default_i_rx, \
          calo_threshold=None,\
          controller_config=None,\
+         pixel_trim_dict=None,\
+         global_offset_dict=None,\
+         pedestal_json=None,\
          c=None,\
          **kwargs):
     
     io = None
     
+    global_offsets={}
+    pixel_trim_slope={}
+
+    with open(pixel_trim_dict, 'r') as f: pixel_trim_slope = json.load(f)
+    with open(global_offset_dict, 'r') as f: global_offsets = json.load(f)
+
+    pedestal=dict()
+    if pedestal_json!=None:
+        with open(pedestal_json,'r') as f: pedestal=json.load(f)
+
 
     if c is None:
         c, io = network.main(file_prefix=file_prefix, \
@@ -122,14 +140,12 @@ def main(LRS=_default_LRS, \
     if disabled_json!=None:
         with open(disabled_json,'r') as f: disabled=json.load(f)
 
-    for pair in scan_threshold_global_trim_dac:
-        threshold_global = pair[0]
-        trim_dac = pair[1]
+    for target in target_vals:
 
         for g_c in iog_ioc.keys():
-            ok, diff=asic_base.enable_fixed_register_trigger_config_by_io_channel(c, io, iog_ioc[g_c],\
-                                                                            vref_dac, vcm_dac, vdda, periodic_reset_cycles, disabled, target,\
-                                                                            threshold_global=threshold_global, trim_dac=trim_dac)
+            ok, diff=asic_base.enable_fixed_target_trigger_config_by_io_channel(c, io, iog_ioc[g_c],\
+                                                                            vref_dac, vcm_dac, vdda, periodic_reset_cycles, pedestal, disabled, target,\
+                                                                            global_offset=global_offsets, pixel_trim=pixel_trim_slope)
             
             if not ok:
                 for key in diff.keys():
@@ -164,7 +180,7 @@ def main(LRS=_default_LRS, \
         
         ctr=0
         while ctr<file_count:
-            filename = utility_base.data(c, runtime, False, file_prefix+'-threshold_global-{}-trim_dac-{}-'.format(threshold_global, trim_dac), LRS)
+            filename = utility_base.data(c, runtime, False, file_prefix+'-target-{}-'.format(target), LRS)
             shutil.move(_current_dir_+filename, _destination_dir_+filename)
             ctr+=1
         for iog in _io_group_pacman_tile_.keys():
@@ -179,7 +195,13 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--controller_config', default=None, \
                         type=str, help='''Controller config for v2a tiles only''')
-
+    parser.add_argument('--pedestal_json', default=_default_pedestal_json, \
+                        type=str, help='''JSON-formatted dict of channel \
+                        pedestal; chip_key: [(mean, std)]''')
+    parser.add_argument('--pixel_trim_dict', default=None, \
+                        type=str, help='''Pixel Trim dict''')
+    parser.add_argument('--global_offset_dict', default=None, \
+                        type=str, help='''Pixel Trim dict''')
     parser.add_argument('--LRS', default=_default_LRS, \
                         action='store_true', help='''True to run LRS''')
     parser.add_argument('--file_prefix', default=_default_file_prefix, \

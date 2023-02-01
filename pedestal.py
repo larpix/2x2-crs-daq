@@ -28,7 +28,7 @@ _default_tx_slice=15
 _default_r_term=2
 _default_i_rx=8
 
-_current_dir_='/home/daq/PACMANv1rev3b/commission/2x2-crs-daq/'
+_current_dir_='/home/daq/PACMANv1rev3b/commission/take2/2x2-crs-daq/'
 _destination_dir_='/data/LArPix/Module3_Feb2023/commission/'
 
 #_io_group_pacman_tile={2:[3]}
@@ -37,8 +37,8 @@ _destination_dir_='/data/LArPix/Module3_Feb2023/commission/'
 #_io_group_pacman_tile_={1:list(range(1,9,1))}
 #_io_group_pacman_tile_={2:list(range(1,9,1))}
 _io_group_pacman_tile_={1:list(range(1,9,1)), 2:list(range(1,9,1))}
-_pacman_version_='v1rev4'
-_asic_version_='2b'
+_pacman_version_='v1rev3b'
+_asic_version_='2'
 
 def main(LRS=_default_LRS, \
          file_prefix=_default_file_prefix, \
@@ -87,13 +87,13 @@ def main(LRS=_default_LRS, \
             c.write_configuration(chip_key,reg)
     
 
-    if disable_logger==False:
-        now=time.strftime("%Y_%m_%d_%H_%M_%Z")
-        if file_prefix!=None: fname=file_prefix+'-pedestal-config-'+now+'.h5'
-        else: fname='pedestal-config-'+now+'.h5'
-        c.logger = larpix.logger.HDF5Logger(filename=fname)
-        print('filename: ', c.logger.filename)
-        c.logger.enable()
+    #if disable_logger==False:
+    #    now=time.strftime("%Y_%m_%d_%H_%M_%Z")
+    #    if file_prefix!=None: fname=file_prefix+'-pedestal-config-'+now+'.h5'
+    #    else: fname='pedestal-config-'+now+'.h5'
+    #    c.logger = larpix.logger.HDF5Logger(filename=fname)
+    #    print('filename: ', c.logger.filename)
+    #    c.logger.enable()
 
     iog_ioc={}
     for chip_key in c.chips:
@@ -130,11 +130,11 @@ def main(LRS=_default_LRS, \
             print('\n\n*****WARNING: Pedestal triggering error(s).*****')
         print('Pedestal triggering setup on IO group ',g_c[0])
 
-    if disable_logger==False:
-        c.logger.flush()
-        c.logger.disable()
-        c.reads=[]
-        shutil.move(_current_dir_+c.logger.filename, _destination_dir_+c.logger.filename)
+    #if disable_logger==False:
+    #    c.logger.flush()
+    #    c.logger.disable()
+    #    c.reads=[]
+    #    shutil.move(_current_dir_+c.logger.filename, _destination_dir_+c.logger.filename)
 
     ctr=0
     while ctr<file_count:

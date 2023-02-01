@@ -76,37 +76,6 @@ def main(LRS=_default_LRS, \
     # load ASIC config    
     c.load(hydra_config_file)
     
-    #    _io_group_pacman_tile_={2:list(range(1,9,1))}
-    #for iog in _io_group_pacman_tile_.keys():
-    #    pacman_base.disable_all_pacman_uart(c.io, iog)
-    #    pacman_base.invert_pacman_uart(c.io, iog, _asic_version_, \
-    #                                   _io_group_pacman_tile_[iog]) 
-
-        #pacman_base.power_up(c.io, iog, 'v1rev4', True, 
-        #                     _io_group_pacman_tile_[iog], _vdda_dac_, \
-        #                     _vddd_dac_, reset_length=1000000000, \
-        #                     vdda_step=1000, vddd_step=1000, ramp_wait=0.1,\
-        #                     warm_wait=20)
-        
-#        pacman_base.power_up(c.io, iog, 'v1rev4', True, 
-#                             _io_group_pacman_tile_[iog], _vdda_dac_, \
-#                             _vddd_dac_, reset_length=300000000, \
-#                             vdda_step=1000, vddd_step=1000, ramp_wait=0.1,\
-#                             warm_wait=20)
-    #for iog in _io_group_pacman_tile_.keys():
-    #    readback=pacman_base.power_readback(c.io, iog, _pacman_version_, \
-    #                                        _io_group_pacman_tile_[iog])
-
-#    _io_group_pacman_tile_={2:[3]}
-    #iog_ioc_cid=utility_base.iog_tile_to_iog_ioc_cid(_io_group_pacman_tile_, \
-    #                                                 _asic_version_)
-        
-    #for g_c_id in iog_ioc_cid:
-    #    network_base.network_ext_node_from_tuple(c, g_c_id)
-    #print('setup software controller to root chips')
-
-    #io.set_reg(0x101c, 4, io_group=io_group)
-    # broadcast write
     for ii in range(1):
         iog_ioc_set = set()
         for chip in c.chips:

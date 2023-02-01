@@ -10,8 +10,138 @@ import numpy as np
 #import asyncio
 from base import ana_base
 #@profile
+
+v2a_nonrouted_channels=[6, 7, 8, 9, 22, 23, 24, 25, 38, 39, 40, 54, 55, 56, 57]
+
+def enable_response_trigger_adc_config_by_io_channel(c, io, chips, vref_dac=185, \
+                                                 vcm_dac=50, vdda=1650.,\
+                                                 periodic_reset_cycles=64, \
+                                                 pedestal=None,\
+                                                 disabled=None,\
+                                                 target=30, cryo=True,\
+                                                 ref_adc=None, global_ref=None, trim_ref=None,trim_scale_dict=None, global_scale_dict=None):
+    
+    print('Enabling response trigger config on io group {}, io channel {}'.format(chips[0].io_group, chips[0].io_channel)) 
+    configs={}
+
+    adc_slope=utility_base.lsb(vdda, vref_dac, vcm_dac, bits=2**8) 
+    
+    print('TARGET VOLTAGE',target, 'mV ABOVE PEDESTAL' )
+    
+    adc_range=ana_base.adc_dict(pedestal, disabled, vdda)
+   
+    chip_global, default_global_dac=ana_base.find_global_dac_adc(adc_range, vdda, target, trim_scale_dict=trim_scale_dict, \
+            global_scale_dict=global_scale_dict, bits=2**8, cryo=cryo, ref_adc=ref_adc, ref_trim=trim_ref, ref_global=global_ref, adc_slope=adc_slope)
+    
+    chip_pixel, default_pixel_trim_dac=ana_base.find_pixel_trim_adc(target, chip_global, pedestal, \
+                    vdda, vref_dac, vcm_dac, cryo=cryo, adc_slope=adc_slope,\
+                    ref_adc=ref_adc, global_ref=global_ref, trim_ref=trim_ref,trim_scale_dict=trim_scale_dict, global_scale_dict=global_scale_dict)
+
+    lower_bound = np.quantile( [chip_global[key] for key in chip_global.keys()], 0.2 )
+    for key in chip_global.keys():
+        if chip_global[key]<lower_bound:
+            chip_global[key]=int(lower_bound)
+
+    
+    io_group = chips[0].io_group
+    io_channel = chips[0].io_channel
+    broadcast = larpix.key.Key(io_group, io_channel, 255)
+
+    c.add_chip(broadcast)
+
+    c[broadcast].config.test_mode_uart0=0
+    c[broadcast].config.test_mode_uart1=0
+    c[broadcast].config.test_mode_uart2=0
+    c[broadcast].config.test_mode_uart3=0
+    c[broadcast].config.channel_mask=[1]*64
+    c[broadcast].config.csa_enable=[0]*64
+
+    for i in range(25):
+        c.write_configuration(broadcast, 'test_mode_uart0')
+        c.write_configuration(broadcast, 'test_mode_uart1')
+        c.write_configuration(broadcast, 'test_mode_uart2')
+        c.write_configuration(broadcast, 'test_mode_uart3')
+        c.write_configuration(broadcast, 'csa_enable')
+        c.write_configuration(broadcast, 'channel_mask')
+
+    c.remove_chip(broadcast)
+    io.set_reg(0x18, 0, io_group=chips[0].io_group)
+    chip_reg_pairs=[]
+    registers=['pixel_trim_dac', 'threshold_global', 'channel_mask', 'vref_dac', 'vcm_dac', 'enable_periodic_reset', 'enable_rolling_periodic_reset', 'enable_hit_veto', 'periodic_reset_cycles']
+    for chip_key in chips:
+        initial_config=deepcopy(c[chip_key].config)
+        if not chip_key in chip_global: 
+            # !!! make IO channel agnostic owing to different networks by
+            # using IO group tile ID \
+            tile=utility_base.io_channel_to_tile(chip_key.io_channel)
+            possible_io_channel=utility_base.tile_to_io_channel([tile])
+            found=False
+            for ioc in possible_io_channel:
+                if ioc==chip_key.io_channel: continue
+                candidate = larpix.key.Key(chip_key.io_group, ioc, chip_key.chip_id)
+                if candidate in chip_global:
+                    c[chip_key].config.threshold_global=chip_global[candidate]
+                    for channel in range(64):
+                        c[chip_key].config.pixel_trim_dac[channel]=chip_pixel[candidate][channel]
+                    found = True
+                    break
+            
+            if not found:
+                c[chip_key].config.threshold_global=default_global_dac+1
+                c[chip_key].config.pixel_trim_dac=default_pixel_trim_dac
+        else:
+            c[chip_key].config.threshold_global=chip_global[chip_key]
+            for channel in range(64):
+                c[chip_key].config.pixel_trim_dac[channel]=chip_pixel[chip_key][channel]
+        
+        io_group=str(chip_key.io_group)
+        io_channel=str(chip_key.io_channel)
+
+        configs[str(chip_key)]={} 
+        configs[str(chip_key)]['pixel_trim']=c[chip_key].config.pixel_trim_dac
+        configs[str(chip_key)]['threshold_global']=c[chip_key].config.threshold_global+1
+        
+        c[chip_key].config.channel_mask=[1]*64
+        c[chip_key].config.vref_dac=vref_dac
+        c[chip_key].config.vcm_dac=vcm_dac
+        
+        c[chip_key].config.enable_periodic_reset=1
+        c[chip_key].config.enable_rolling_periodic_reset=1
+        c[chip_key].config.periodic_reset_cycles=periodic_reset_cycles
+        c[chip_key].config.enable_hit_veto=1
+        chip_reg_pairs+=[ (chip_key,c[chip_key].config.register_map[reg]) for reg in registers ]
+
+        c[chip_key].config.pixel_trim_dac[37]=31
+        
+    io.group_packets_by_io_group=True
+    io.double_send_packets=True
+    io.set_reg(0x18, 2**(chips[0].io_channel-1), io_group=chips[0].io_group)
+        
+   # chip_reg_pairs=c.differential_write_configuration(chip_config_pairs, \
+   #                                                   write_read=0, \
+   #                                                   connection_delay=0.02)
+    
+    all_ok = True
+    all_diff = {}
+    if True:
+    #for chip_key in chips:
+        #ok, diff = utility_base.reconcile_configuration(c, chip_key, False)
+        ## DD 2023/01/30: Only check registers that were being altered 
+        ok, diff = c.enforce_registers(chip_reg_pairs,timeout=0.1, n=10, n_verify=2)
+        if not ok:
+            all_ok = ok
+            all_diff.update(diff)
+    
+    if all_ok: print('Done')
+    io.set_reg(0x18, 0, io_group=chips[0].io_group)
+    io.group_packets_by_io_group=False
+    io.double_send_packets=False    
+    with open('io-channel-{}-io_group-{}-run-configs.json'.format(io_channel, io_group), 'w') as f: json.dump(configs, f, indent=4)
+    return all_ok, all_diff
+
+
 def regulate_rate_fractional(c, io, io_group, set_rate, disable, sample_time=0.5, ioch=None):
-    #return disable
+    return disable
     io.set_reg(0x18, 0, io_group=io_group)
     io.group_packets_by_io_group=True
     io.double_send_packets=True
@@ -514,35 +644,44 @@ def enable_fixed_register_trigger_config_by_io_channel(c, io, chips,\
     io.group_packets_by_io_group=True
     io.double_send_packets=True
     io.set_reg(0x18, 2**(chips[0].io_channel-1), io_group=chips[0].io_group)
-        
+    print(2**(chips[0].io_channel-1)) 
     chip_reg_pairs=c.differential_write_configuration(chip_config_pairs, \
                                                       write_read=0, \
                                                       connection_delay=0.01)
+    all_ok = True
+    all_diff = {}
     for chip_key in chips:
-        ok, diff = utility_base.reconcile_configuration(c, chip_key, False)
+        #ok, diff = utility_base.reconcile_configuration(c, chip_key, False)
+        ## DD 2023/01/30: Only check registers that were being altered (consider connection delay of 0.02)
+        ok, diff = utility_base.reconcile_registers(c, chip_reg_pairs, verbose=False, timeout=0.1,
+                                                    connection_delay=0.02, n=5, n_verify=5)
+        if not ok:
+            all_ok = ok
+            all_diff.update(diff)
+    
     io.set_reg(0x18, 0, io_group=chips[0].io_group)
     io.group_packets_by_io_group=False
     io.double_send_packets=False    
-    return ok, diff
+    return all_ok, all_diff
 
 
-def enable_response_trigger_config_by_io_channel(c, io, chips, vref_dac=185, \
+def enable_fixed_target_trigger_config_by_io_channel(c, io, chips, vref_dac=185, \
                                                  vcm_dac=50, vdda=1650.,\
                                                  periodic_reset_cycles=6400, \
                                                  pedestal=None,\
                                                  disabled=None,\
-                                                 target=30, cryo=True,\
-                                                 calo_threshold=None,\
-                                                 calo_measured=None):
+                                                 target=30, cryo=True, pixel_trim=None, global_offset=None, calo_threshold=None, calo_measured=None):
     
+
     print('TARGET VOLTAGE',target, 'mV ABOVE PEDESTAL' )
     mV_range=ana_base.dV_dict(pedestal, disabled, vdda, \
                               vref_dac, vcm_dac)
-    chip_global=ana_base.find_global_dac(mV_range, vdda, target)
+    chip_global=ana_base.find_global_dac(mV_range, vdda, target, pixel_trim, global_offset)
 
     chip_pixel=ana_base.find_pixel_trim(target, chip_global, pedestal, \
                                         vdda, vref_dac, vcm_dac, cryo, calo_threshold=calo_threshold,\
-                                        calo_measured=calo_measured)
+                                        calo_measured=calo_measured, trim_scale_dict=pixel_trim, offset_dict=global_offset)
+    
     default_global_dac=int(sum([chip_global[kk] for kk in chip_global.keys()])/len(chip_global.keys()))#+8
     default_pixel_trim_dac = [20]*64
     io.set_reg(0x18, 0, io_group=chips[0].io_group)
@@ -576,9 +715,8 @@ def enable_response_trigger_config_by_io_channel(c, io, chips, vref_dac=185, \
         c[chip_key].config.channel_mask=[1]*64
         c[chip_key].config.vref_dac=vref_dac
         c[chip_key].config.vcm_dac=vcm_dac
-        c[chip_key].config.enable_periodic_reset=1
-        c[chip_key].config.enable_rolling_periodic_reset=1
-        c[chip_key].config.periodic_reset_cycles=periodic_reset_cycles
+        c[chip_key].config.enable_periodic_reset=0
+        c[chip_key].config.enable_rolling_periodic_reset=0
         c[chip_key].config.enable_hit_veto=1
         chip_config_pairs.append((chip_key,initial_config))
 
@@ -595,6 +733,97 @@ def enable_response_trigger_config_by_io_channel(c, io, chips, vref_dac=185, \
     io.group_packets_by_io_group=False
     io.double_send_packets=False    
     return ok, diff
+
+
+def enable_response_trigger_config_by_io_channel(c, io, chips, vref_dac=185, \
+                                                 vcm_dac=50, vdda=1650.,\
+                                                 periodic_reset_cycles=6400, \
+                                                 pedestal=None,\
+                                                 disabled=None,\
+                                                 target=30, cryo=True,\
+                                                 calo_threshold=None, global_offset=None, pixel_trim=None,\
+                                                 calo_measured=None):
+    
+    print('TARGET VOLTAGE',target, 'mV ABOVE PEDESTAL' )
+    mV_range=ana_base.dV_dict(pedestal, disabled, vdda, \
+                              vref_dac, vcm_dac)
+    
+
+    chip_global=ana_base.find_global_dac(mV_range, vdda, target, pixel_trim, global_offset)
+
+    chip_pixel=ana_base.find_pixel_trim(target, chip_global, pedestal, \
+                                        vdda, vref_dac, vcm_dac, cryo, calo_threshold=calo_threshold,\
+                                        calo_measured=calo_measured, trim_scale_dict=pixel_trim, offset_dict=global_offset)
+    
+    default_global_dac=int(sum([chip_global[kk] for kk in chip_global.keys()])/len(chip_global.keys()))#+8
+    default_pixel_trim_dac = [20]*64
+    io.set_reg(0x18, 0, io_group=chips[0].io_group)
+    chip_config_pairs=[]
+    for chip_key in chips:
+        initial_config=deepcopy(c[chip_key].config)
+        if not chip_key in chip_global: 
+            # !!! make IO channel agnostic owing to different networks by
+            # using IO group tile ID \
+            tile=utility_base.io_channel_to_tile(chip_key.io_channel)
+            possible_io_channel=utility_base.tile_to_io_channel([tile])
+            found=False
+            for ioc in possible_io_channel:
+                if ioc==chip_key.io_channel: continue
+                candidate = larpix.key.Key(chip_key.io_group, ioc, chip_key.chip_id)
+                if candidate in chip_global:
+                    c[chip_key].config.threshold_global=chip_global[candidate]
+                    for channel in range(64):
+                        c[chip_key].config.pixel_trim_dac[channel]=chip_pixel[candidate][channel]
+                    found = True
+                    break
+            
+            if not found:
+                c[chip_key].config.threshold_global=default_global_dac
+                c[chip_key].config.pixel_trim_dac=default_pixel_trim_dac
+        else:
+            c[chip_key].config.threshold_global=chip_global[chip_key]
+            for channel in range(64):
+                c[chip_key].config.pixel_trim_dac[channel]=chip_pixel[chip_key][channel]
+
+        c[chip_key].config.channel_mask=[1]*64
+        c[chip_key].config.vref_dac=vref_dac
+        c[chip_key].config.vcm_dac=vcm_dac
+        
+        c[chip_key].config.enable_periodic_reset=0
+        c[chip_key].config.enable_rolling_periodic_reset=0
+        c[chip_key].config.periodic_reset_cycles=periodic_reset_cycles
+        c[chip_key].config.enable_hit_veto=1
+        chip_config_pairs.append((chip_key,initial_config))
+
+    io.group_packets_by_io_group=True
+    io.double_send_packets=True
+    io.set_reg(0x18, 2**(chips[0].io_channel-1), io_group=chips[0].io_group)
+        
+    chip_reg_pairs=c.differential_write_configuration(chip_config_pairs, \
+                                                      write_read=0, \
+                                                      connection_delay=0.01)
+    all_ok = True
+    all_diff = {}
+    for chip_key in chips:
+        #ok, diff = utility_base.reconcile_configuration(c, chip_key, False)
+        ## DD 2023/01/30: Only check registers that were being altered
+        ok, diff = utility_base.reconcile_registers(c, chip_reg_pairs, verbose=False, timeout=0.1,
+                                                    connection_delay=0.02, n=5, n_verify=5)
+        if not ok:
+            all_ok = ok
+            all_diff.update(diff)
+
+    if all_ok: print('Done')
+    #if not ok:
+    #    print('Configuration error; re-enforcing correct registers on chips', diff.keys())
+    #    ok, diff = c.enforce_configuration(list(diff.keys()), timeout=0.05, \
+    #                                   connection_delay=0.01, \
+    #                                   n=10, n_verify=10) 
+
+    io.set_reg(0x18, 0, io_group=chips[0].io_group)
+    io.group_packets_by_io_group=False
+    io.double_send_packets=False    
+    return all_ok, all_diff
 
 
 def enable_leakage_current_config(c, io, io_group, vref_dac=255, vcm_dac=50, \
@@ -624,6 +853,11 @@ def enable_leakage_current_config(c, io, io_group, vref_dac=255, vcm_dac=50, \
                                                       write_read=0, \
                                                       connection_delay=0.01)
     ok, diff = c.enforce_configuration(list(c.chips.keys()), timeout=0.01, \
+                                       connection_delay=0.01, \
+                                       n=10, n_verify=10)
+    if not ok:
+        print('Configuration error; re-enforcing correct registers on chips', diff.keys())
+        ok, diff = c.enforce_configuration(list(diff.keys()), timeout=0.05, \
                                        connection_delay=0.01, \
                                        n=10, n_verify=10)
     io.set_reg(0x18, 0, io_group=io_group)
@@ -807,6 +1041,7 @@ def enable_self_triggering(c, io, io_group, disabled, set_rate=None):
             disabled = regulate_rate_fractional(c, io, io_group, set_rate, disabled, sample_time=0.5, ioch=[ioc])
 
     pacman_base.enable_pacman_uart_from_io_channel(io, io_group, io_channels_to_enable)
+    print("Warning!!!: These configuration register write commands are never checked!!!")
     c.multi_write_configuration(chip_config_pairs_write_first)
     c.multi_write_configuration(chip_config_pairs)
 

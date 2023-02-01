@@ -26,10 +26,10 @@ _default_chip_id = 2
 _default_io_channel = 1
 _default_miso_ds = 0
 _default_mosi = 0
-_default_clk_ctrl = 1
+_default_clk_ctrl = 0
 
 ##### default IO 
-_uart_phase = 0
+_uart_phase = 2
 
 #clk_ctrl_2_clk_ratio_map = {
 #        0: 2,
@@ -109,20 +109,29 @@ def get_reg_pairs(io_channels):
     return reg_pairs
 
 
-def set_pacman_power(c, vdda=46020, vddd=40605):
+#print('ENABLE PRC!!!!!FIX ME REPLACING TILE 1 VDDD FOR SINGLE BRINGUP--PUT BACK TO 37520 ON IO GROUP 1')
+vddd_bytile_byio = [[37500, 38500, 38500, 38500, 38500, 39000, 39000, 39000],\
+                [37520, 38000, 38500, 38000, 38500, 39000, 39000, 39000]]
+
+
+
+def set_pacman_power(c, vdda=46020, vddd=37520):
+    return
     for _io_group, io_channels in c.network.items():
         active_io_channels = []
-        for io_channel in io_channels:
+        for io_channel in range(1,33): #io_channels:
             active_io_channels.append(io_channel)
         reg_pairs = get_reg_pairs(active_io_channels)
-        for pair in reg_pairs:
-            c.io.set_reg(pair[0], vdda, io_group=_io_group)
-            c.io.set_reg(pair[1], vddd, io_group=_io_group)
-        tiles = get_all_tiles(active_io_channels)
-        bit_string = list('1000000000')
-        for tile in tiles: bit_string[-1*tile] = '1'
+        print(active_io_channels)
+        #reg_pairs=get_reg_pairs([25,26, 27,28])
+        #for ip, pair in enumerate(reg_pairs):
+        #    c.io.set_reg(pair[0], vdda, io_group=_io_group)
+        #    c.io.set_reg(pair[1], vddd_bytile_byio[_io_group-1][ip], io_group=_io_group)
+        #tiles = get_all_tiles(active_io_channels)
+        #bit_string = list('1000000000')
+        #for tile in tiles: bit_string[-1*tile] = '1'
         c.io.set_reg(0x00000014, 1, io_group=_io_group) # enable global larpix power
-        c.io.set_reg(0x00000010, int("".join(bit_string), 2), io_group=_io_group) # enable tiles to be powered
+        #c.io.set_reg(0x00000010, int("".join(bit_string), 2), io_group=_io_group) # enable tiles to be powered
         c.io.set_reg(0x101C, 4, io_group=_io_group)
         c.io.set_reg(0x18, 0xffffffff, io_group=_io_group) # enable uarts (for all tiles?)
     time.sleep(0.1)
@@ -218,7 +227,7 @@ def reset(c, config=None, enforce=False, verbose=False, modify_power=False, vdda
     if hasattr(c,'logger') and c.logger: c.logger.record_configs(list(c.chips.values()))
     return c
         
-def main(controller_config=_default_controller_config, pacman_version=_default_pacman_version, logger=_default_logger, vdda=46020, vddd=40605, reset=_default_reset, enforce=True, no_enforce=False, verbose=True, modify_power=True, return_bad_keys=False, retry=0, **kwargs):
+def main(controller_config=_default_controller_config, pacman_version=_default_pacman_version, logger=_default_logger, vdda=46020, vddd=40605, reset=_default_reset, enforce=True, no_enforce=False, verbose=True, modify_power=True, return_bad_keys=False, retry=0, resume=False, **kwargs):
     if verbose: print('[START BASE]')
     ###### create controller with pacman io
     print(pacman_version) 
@@ -251,21 +260,20 @@ def main(controller_config=_default_controller_config, pacman_version=_default_p
 
 
     ##### issue hard reset (resets state machines and configuration memory)
-    if reset:
+    if reset and not resume:
         c.io.reset_larpix(length=10240)
         # resets uart speeds on fpga
         for io_group, io_channels in c.network.items():
             for io_channel in io_channels:
                 c.io.set_uart_clock_ratio(io_channel, clk_ctrl_2_clk_ratio_map[0], io_group=io_group)
 
-                
+    #c.io.set_reg(0x10014, 0x04, io_group=2)            
     ##### initialize network
     c.io.group_packets_by_io_group = False # throttle the data rate to insure no FIFO collisions
     for io_group, io_channels in c.network.items():
         for io_channel in io_channels:
+            #c.init_network(io_group, io_channel, modify_mosi=False)
             c.init_network(io_group, io_channel, modify_mosi=False)
-            #c.init_network(io_group, io_channel, modify_mosi=True)
-
             
     ###### set uart speed (v2a at 2.5 MHz transmit clock, v2b fine at 5 MHz transmit clock)
     for io_group, io_channels in c.network.items():
@@ -273,11 +281,11 @@ def main(controller_config=_default_controller_config, pacman_version=_default_p
             chip_keys = c.get_network_keys(io_group,io_channel,root_first_traversal=False)
             for chip_key in chip_keys:
                 c[chip_key].config.clk_ctrl = _default_clk_ctrl
-                c.write_configuration(chip_key, 'clk_ctrl')
+                if not resume: c.write_configuration(chip_key, 'clk_ctrl')
 
     for io_group, io_channels in c.network.items():
         for io_channel in io_channels:
-            c.io.set_uart_clock_ratio(io_channel, clk_ctrl_2_clk_ratio_map[_default_clk_ctrl], io_group=io_group)
+            if not resume: c.io.set_uart_clock_ratio(io_channel, clk_ctrl_2_clk_ratio_map[_default_clk_ctrl], io_group=io_group)
             #print('io_channel:',io_channel,'factor:',c.io.set_uart_clock_ratio(io_channel, clk_ctrl_2_clk_ratio_map[_default_clk_ctrl], io_group=io_group))
 
 
@@ -297,9 +305,10 @@ def main(controller_config=_default_controller_config, pacman_version=_default_p
         chip_config_pairs.append((chip_key,initial_config))
     c.io.double_send_packets = True
     c.io.group_packets_by_io_group = True
-    chip_register_pairs = c.differential_write_configuration(chip_config_pairs, write_read=0, connection_delay=0.01)
-    chip_register_pairs = c.differential_write_configuration(chip_config_pairs, write_read=0, connection_delay=0.01)
-    flush_data(c)
+    if not resume:
+        chip_register_pairs = c.differential_write_configuration(chip_config_pairs, write_read=0, connection_delay=0.01)
+        chip_register_pairs = c.differential_write_configuration(chip_config_pairs, write_read=0, connection_delay=0.01)
+        flush_data(c)
 
     if not enforce: 
         print('enforcing:', enforce)
@@ -307,19 +316,33 @@ def main(controller_config=_default_controller_config, pacman_version=_default_p
         if verbose: print('[FINISH BASE]')
         return c
 
+    if resume:
+        return c
+
+    current=[[0]*33, [0]*33, [0]*33]
+    for io_group, __ in c.network.items():
+        pacman_base.disable_all_pacman_uart(c.io,io_group)
     print('enforcing configuration:', enforce)
     #for chip_key in c.chips:
     for chip_key in tqdm(c.chips,desc='configuring chips...',ncols=80,smoothing=0):
-        chip_registers = [(chip_key, i) for i in [82,83,125,129]]
+        ioch = int(chip_key.io_channel)
+        iog = int(chip_key.io_group)
+        if current[iog][ioch]==0: 
+            current[iog]=[0]*33
+            current[iog][ioch]=1
+            pacman_base.enable_pacman_uart_from_io_channel(c.io, iog, [ioch])
+        #chip_registers = [(chip_key, i) for i in [82,83,125,129]]
+        chip_registers = [(chip_key, i) for i in range(c[chip_key].config.num_registers)]
         ok,diff = c.enforce_registers(chip_registers, timeout=0.1, n=10, n_verify=10)
         if not ok:
             print(diff,'\nconfig error on chips',list(diff.keys())) 
-            print('retrying...')
-            if retry < 5:
-                retry = retry+1
-                print('Retry attempt # ',retry)
-                return main(controller_config=controller_config, pacman_version=pacman_version, logger=logger, vdda=vdda, reset=reset, enforce=True, no_enforce=False, verbose=verbose, modify_power=modify_power, retry=retry)
-            else: raise RuntimeError(diff,'\nconfig error on chips',list(diff.keys()))
+            #print('retrying...')
+            #if retry < 5:
+            #    retry = retry+1
+            #    print('Retry attempt # ',retry)
+            #    return main(controller_config=controller_config, pacman_version=pacman_version, logger=logger, vdda=vdda, reset=reset, enforce=True, no_enforce=False, verbose=verbose, modify_power=modify_power, retry=retry)
+            #else: raise RuntimeError(diff,'\nconfig error on chips',list(diff.keys()))
+            raise RuntimeError(diff,'\nconfig error on chips',list(diff.keys()))
     c.io.double_send_packets = False
     c.io.group_packets_by_io_group = False
     if verbose: print('base configuration successfully enforced')

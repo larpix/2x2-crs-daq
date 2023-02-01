@@ -95,51 +95,52 @@ def get_initial_controller(io_group, io_channels, vdda=0, pacman_version='v1rev3
         c.io = larpix.io.PACMAN_IO(relaxed=True)
         c.io.double_send_packets = True
         print('getting initial controller')
-        if pacman_version == 'v1rev3b':
-                print('setting power,', vdda)
-                vddd_voltage = 1.6
-                vddd = convert_voltage_for_pacman(vddd_voltage)
-                vdda = convert_voltage_for_pacman(vdda)
-                reg_pairs = get_reg_pairs(io_channels)
-                for pair in reg_pairs:
-                        c.io.set_reg(pair[0], vdda, io_group=io_group)
-                        c.io.set_reg(pair[1], vddd, io_group=io_group)
-                tiles = get_all_tiles(io_channels)
-                bit_string = list('100000000') # prepended '1' to enable the clock
-                for tile in tiles: bit_string[-1*tile] = '1'
-                c.io.set_reg(0x00000014, 1, io_group=io_group) # enable global larpix power
-                print(bit_string)
-                print(int("".join(bit_string),2))
-                c.io.set_reg(0x00000010, int("".join(bit_string), 2), io_group=io_group) # enable tiles to be powered
-                c.io.set_reg(0x101C, 4, io_group=io_group)
-                c.io.set_reg(0x18, 0xffffffff, io_group=io_group) # enable uarts (for all tiles?)
+        #if pacman_version == 'v1rev3b':
+                #print('setting power,', vdda)
+                #vddd_voltage = 1.6
+                #vddd = convert_voltage_for_pacman(vddd_voltage)
+                #vddd=37800
+                #vdda = convert_voltage_for_pacman(vdda)
+                #reg_pairs = get_reg_pairs(io_channels)
+                #for pair in reg_pairs:
+                #        c.io.set_reg(pair[0], vdda, io_group=io_group)
+                #        c.io.set_reg(pair[1], vddd, io_group=io_group)
+                #tiles = get_all_tiles(io_channels)
+                #bit_string = list('100000000') # prepended '1' to enable the clock
+                #for tile in tiles: bit_string[-1*tile] = '1'
+                #c.io.set_reg(0x00000014, 1, io_group=io_group) # enable global larpix power
+                #print(bit_string)
+                #print(int("".join(bit_string),2))
+                #c.io.set_reg(0x00000010, int("".join(bit_string), 2), io_group=io_group) # enable tiles to be powered
+                #c.io.set_reg(0x101C, 4, io_group=io_group)
+                #c.io.set_reg(0x18, 0xffffffff, io_group=io_group) # enable uarts (for all tiles?)
 
-                power = power_registers()
-                adc_read = 0x00024001
-                for i in power.keys():
-                        val_vdda = c.io.get_reg(adc_read+power[i][0], io_group=io_group)
-                        val_idda = c.io.get_reg(adc_read+power[i][1], io_group=io_group)
-                        val_vddd = c.io.get_reg(adc_read+power[i][2], io_group=io_group)
-                        val_iddd = c.io.get_reg(adc_read+power[i][3], io_group=io_group)
-                        print('TILE',i,
-                                  '\tVDDA:',(((val_vdda>>16)>>3)*4),
-                                  '\tIDDA:',(((val_idda>>16)-(val_idda>>31)*65535)*500*0.01),
-                                  '\tVDDD:',(((val_vddd>>16)>>3)*4),
-                                  '\tIDDD:',(((val_iddd>>16)-(val_iddd>>31)*65535)*500*0.01))
+                #power = power_registers()
+                #adc_read = 0x00024001
+                #for i in power.keys():
+                #        val_vdda = c.io.get_reg(adc_read+power[i][0], io_group=io_group)
+                #        val_idda = c.io.get_reg(adc_read+power[i][1], io_group=io_group)
+                #        val_vddd = c.io.get_reg(adc_read+power[i][2], io_group=io_group)
+                #        val_iddd = c.io.get_reg(adc_read+power[i][3], io_group=io_group)
+                #        print('TILE',i,
+                #                  '\tVDDA:',(((val_vdda>>16)>>3)*4),
+                #                  '\tIDDA:',(((val_idda>>16)-(val_idda>>31)*65535)*500*0.01),
+                #                  '\tVDDD:',(((val_vddd>>16)>>3)*4),
+                #                  '\tIDDD:',(((val_iddd>>16)-(val_iddd>>31)*65535)*500*0.01))
 
         #adding pacman!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         for io_channel in io_channels:
-                c.add_network_node(io_group, io_channel, c.network_names, 'ext', root=True)
+            c.add_network_node(io_group, io_channel, c.network_names, 'ext', root=True)
         #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         #resetting larpix
-        c.io.reset_larpix(length=10240, io_group=io_group)
-        for io_channel in io_channels:
-                c.io.set_uart_clock_ratio(io_channel, clk_ctrl_2_clk_ratio_map[0], io_group=io_group)
-                print("setting uart clock ratio to:",clk_ctrl_2_clk_ratio_map[0]) 
+        #c.io.reset_larpix(length=10240, io_group=io_group)
+        #for io_channel in io_channels:
+        #        c.io.set_uart_clock_ratio(io_channel, clk_ctrl_2_clk_ratio_map[0], io_group=io_group)
+        #        print("setting uart clock ratio to:",clk_ctrl_2_clk_ratio_map[0]) 
         ###################################################################################
         #pacman_base.enable_pacman_uart_from_tile(c.io, io_group, [tile] )
-        pacman_base.enable_pacman_uart_from_io_channels(c.io, io_group, io_channels )
+        #pacman_base.enable_pacman_uart_from_io_channels(c.io, io_group, io_channels )
         
         return c
 
@@ -246,13 +247,14 @@ def test_network(c, io_group, io_channels, paths):
                         c[next_key].config.enable_miso_differential =[1,1,1,1]
                         c.write_configuration(next_key, 'enable_miso_downstream')
 
-                        if (path[step-1], path[step]) in arr.good_connections:
+                        #if (path[step-1], path[step]) in arr.good_connections:
                         #        #already verified links
-                        #        print(next_key, 'already verified')
-                                pbar.update(1)
-                                continue
+                        #       #print(next_key, 'already verified')
+                        #        pbar.update(1)
+                        #        continue
 
-                        ok, diff = c.enforce_registers([(next_key, 122)], timeout=0.5, n=3)
+                        ok, diff = c.enforce_registers([(next_key, reg) for reg in range(5,225)], timeout=0.2, n=2)
+                        #ok, diff = c.enforce_configuration(next_key)
                         pbar.update(1)
                         if ok:
                                 arr.add_good_connection((path[step-1], path[step])) 
@@ -315,8 +317,8 @@ def hydra_chain(io_group, pacman_tile, pacman_version, vdda, exclude=None, first
             if type(exclude)==int: arr.add_excluded_chip(exclude)
             else:
                 for chip in exclude: arr.add_excluded_chip(chip)
-        io_channels = [ 1 + 4*(pacman_tile - 1) + n for n in range(4)]
-        #io_channels = [9, 11, 12]
+        io_channels = [ 1 + 4*(pacman_tile - 1) + n for n in range(3)]
+        #io_channels = [9,10,12]
         print("--------------------------------------------")
         print("get_initial_controller(",io_group,",",io_channels,",",vdda,",",pacman_version,")")
         c = get_initial_controller(io_group, io_channels, vdda, pacman_version)

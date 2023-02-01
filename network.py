@@ -31,13 +31,13 @@ _current_dir_='/home/daq/PACMANv1rev4/commission/'
 _destination_dir_='/data/LArPix/Module2_Nov2022/TPC12_run2/'
 #_io_group_pacman_tile_={9:[1]}
 #_io_group_pacman_tile_={2:[2]}
-_io_group_pacman_tile_={1:list(range(3,4,1))}
+_io_group_pacman_tile_={1:[4]}
 #_io_group_pacman_tile_={1:list(range(1,9,1)), 2:list(range(1,9,1))}
 _io_group_asic_version_={1:2, 2:2}
 _vdda_dac_=[47000]*8
 _vddd_dac_=[31000]*8
 _iog_pacman_version_={1: 'v1rev3b', 2 : 'v1rev3b'}
-_iog_exclude={1: {3:41}, 2:{}}
+_iog_exclude={1:{}, 2:{} }
 
 
 def main(file_prefix=_default_file_prefix, \
@@ -49,6 +49,7 @@ def main(file_prefix=_default_file_prefix, \
          r_term=_default_r_term, \
          i_rx=_default_i_rx, \
          controller_config=None,
+         resume=False,
          **kwargs):
    
     c = larpix.Controller()
@@ -68,12 +69,14 @@ def main(file_prefix=_default_file_prefix, \
         c.logger.enable()
     
          
-#    _io_group_pacman_tile_={1: list(range(1, 9, 1)), 2:list(range(1,9,1))}
+    _io_group_pacman_tile_={1: list(range(1, 9, 1)), 2:list(range(1,9,1))}
     for iog in _io_group_pacman_tile_.keys():
-        pacman_base.disable_all_pacman_uart(c.io, iog)
+       
+        iog_ioc_cid=utility_base.iog_tile_to_iog_ioc_cid(_io_group_pacman_tile_, _io_group_asic_version_[iog])
+        #pacman_base.disable_all_pacman_uart(c.io, iog)
         #VERSION_SPECIFIC
-        if _io_group_asic_version_[iog]=='2b': pacman_base.invert_pacman_uart(c.io, iog, _io_group_asic_version_[iog], \
-                                       _io_group_pacman_tile_[iog]) 
+#        if _io_group_asic_version_[iog]=='2b': pacman_base.invert_pacman_uart(c.io, iog, _io_group_asic_version_[iog], \
+#                                       _io_group_pacman_tile_[iog]) 
      #   if iog==1: continue
         #VERSION_SPECIFIC
      #   pacman_base.power_up(c.io, iog, _iog_pacman_version_[iog], True, 
@@ -84,16 +87,16 @@ def main(file_prefix=_default_file_prefix, \
 #                             _vddd_dac_, reset_length=300000000, \
 #                             vdda_step=1000, vddd_step=1000, ramp_wait=0.1,\
 #                             warm_wait=20)
-    time.sleep(1)
-    for iog in _io_group_pacman_tile_.keys():
-        readback=pacman_base.power_readback(c.io, iog, _iog_pacman_version_[iog], \
-                                            _io_group_pacman_tile_[iog])
+#    time.sleep(1)
+#    for iog in _io_group_pacman_tile_.keys():
+#        readback=pacman_base.power_readback(c.io, iog, _iog_pacman_version_[iog], \
+                                            #_io_group_pacman_tile_[iog])
 
     #_io_group_pacman_tile_={2:[3]}
-    iog_ioc_cid=utility_base.iog_tile_to_iog_ioc_cid(_io_group_pacman_tile_, _io_group_asic_version_[iog])
         
     for g_c_id in iog_ioc_cid:
         network_base.network_ext_node_from_tuple(c, g_c_id)
+    
     print('setup software controller to root chips')
     
     for iog in _io_group_pacman_tile_.keys():
@@ -149,7 +152,7 @@ def main(file_prefix=_default_file_prefix, \
                 time.sleep(1)
             else: 
                 print('starting main')
-                c = v2a_base.main(controller_config=controller_config, pacman_version=_iog_pacman_version_[iog])
+                c = v2a_base.main(controller_config=controller_config, pacman_version=_iog_pacman_version_[iog], resume=resume)
                 io = c.io
                 return c, c.io
 
