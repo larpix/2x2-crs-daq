@@ -8,12 +8,12 @@ import time
 
 _default_chip_key='All'
 _default_register=None
-_default_value=None
+_default_length=2048
 _default_controller_config=None
 
 def main(chip_key=_default_chip_key, \
         register=_default_register,\
-        value=_default_value,\
+        length=_default_length,\
         controller_config=_default_controller_config,\
          **kwargs):
 
@@ -21,9 +21,10 @@ def main(chip_key=_default_chip_key, \
     c.io = larpix.io.PACMAN_IO(relaxed=True)
     
     c.load(controller_config)
+    mclock = 10e6
+    for io_group, io_channels in c.network.items():
+        c.io.reset_larpix(length=int(length*mclock), io_group=int(io_group) )
     
-    c.io.reset_larpix(length=24, io_group=1)
-    c.io.reset_larpix(length=24, io_group=2)
     return c, c.io
 
 
@@ -36,8 +37,8 @@ if __name__=='__main__':
                         type=str, help='''Chip key, default All''')
     parser.add_argument('--register', default=_default_register, \
                         type=str, help='''Register to set''')
-    parser.add_argument('--value', default=_default_value, \
-                        type=int, help='''Register value to set''')
+    parser.add_argument('--length', default=_default_length, \
+                        type=int, help='''reset length in seconds''')
     parser.add_argument('--controller_config', default=_default_controller_config,\
                         type=str, help='''Path to hydra config JSON ''')
 

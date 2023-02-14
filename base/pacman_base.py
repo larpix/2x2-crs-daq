@@ -9,7 +9,7 @@ import argparse
 import time
 import math
 import asyncio
-from timebudget import timebudget
+#from timebudget import timebudget
 from base.v2a_base import *
 ##########################################################################
 #---------------PACMAN UART INVERSION/DISABLE/ENABLE---------------------#

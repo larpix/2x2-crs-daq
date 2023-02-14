@@ -2,7 +2,7 @@ import larpix
 from base import pacman_base
 from base import utility_base
 from copy import deepcopy
-from memory_profiler import profile
+#from memory_profiler import profile
 import json
 import time
 import numpy as np
@@ -445,7 +445,7 @@ def enable_selftrigger_config(c, io, io_group, periodic_reset_cycles=64):
 
 def enable_pedestal_config(c, io, io_group, pacman_tile, \
                            vref_dac=185, vcm_dac=50, \
-                           periodic_trigger_cycles=100000, \
+                           periodic_trigger_cycles=200000, \
                            periodic_reset_cycles=4096):
     io.set_reg(0x18, 0, io_group=io_group)
     chip_config_pairs=[]

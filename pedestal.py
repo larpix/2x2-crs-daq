@@ -18,7 +18,7 @@ _default_disabled_json=None
 _default_generate=False
 _default_runtime=300
 _default_file_count=1
-_default_periodic_trigger_cycles=50000
+_default_periodic_trigger_cycles=200000
 _default_periodic_reset_cycles=4096 #409600
 _default_vref_dac=223 ###cold 223 ### warm 185
 _default_vcm_dac=68 ### cold 68 ### warm 50
@@ -33,14 +33,15 @@ _destination_dir_='/data/LArPix/Module3_Feb2023/commission/'
 
 #_io_group_pacman_tile={2:[3]}
 #_io_group_pacman_tile_={9:[1]}
-#_io_group_pacman_tile_={1:[1,2]}
+_io_group_pacman_tile_={1:[2]}
 #_io_group_pacman_tile_={1:list(range(1,9,1))}
 #_io_group_pacman_tile_={2:list(range(1,9,1))}
-_io_group_pacman_tile_={1:list(range(1,9,1)), 2:list(range(1,9,1))}
+#_io_group_pacman_tile_={1:list(range(1,9,1)), 2:list(range(1,9,1))}
 _pacman_version_='v1rev3b'
 _asic_version_='2'
 
 def main(LRS=_default_LRS, \
+         resume=False,
          file_prefix=_default_file_prefix, \
          disable_logger=_default_disable_logger, \
          verbose=_default_verbose, \
@@ -60,7 +61,7 @@ def main(LRS=_default_LRS, \
          controller_config=None,
          **kwargs):
         
-    c, io = network.main(file_prefix=file_prefix, \
+    c, io = network.main(file_prefix=file_prefix, resume=resume,\
                          disable_logger=disable_logger, \
                          verbose=verbose, ref_current_trim=ref_current_trim,\
                          tx_diff=_default_tx_diff, tx_slice=_default_tx_slice, r_term=r_term,\
@@ -155,6 +156,8 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--controller_config', default=None, \
                         type=str, help='''Controller config for v2a tiles only''')
+    parser.add_argument('--resume', default=False, \
+                        action='store_true',  help='''Skip hydra configuration''')
     parser.add_argument('--LRS', default=_default_LRS, \
                         action='store_true',  help='''To run LRS''')
     parser.add_argument('--file_prefix', default=_default_file_prefix, \

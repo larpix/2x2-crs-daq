@@ -26,7 +26,7 @@ _default_chip_id = 2
 _default_io_channel = 1
 _default_miso_ds = 0
 _default_mosi = 0
-_default_clk_ctrl = 0
+_default_clk_ctrl = 1
 
 ##### default IO 
 _uart_phase = 2
@@ -262,6 +262,9 @@ def main(controller_config=_default_controller_config, pacman_version=_default_p
     ##### issue hard reset (resets state machines and configuration memory)
     if reset and not resume:
         c.io.reset_larpix(length=10240)
+        time.sleep(10240*(1/(10e6)))
+        c.io.reset_larpix(length=10240)
+        time.sleep(10240*(1/(10e6)))
         # resets uart speeds on fpga
         for io_group, io_channels in c.network.items():
             for io_channel in io_channels:
