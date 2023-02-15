@@ -33,8 +33,8 @@ _destination_dir_='/data/LArPix/Module3_Feb2023/commission/'
 
 #_io_group_pacman_tile={2:[3]}
 #_io_group_pacman_tile_={9:[1]}
-_io_group_pacman_tile_={1:[2]}
-#_io_group_pacman_tile_={1:list(range(1,9,1))}
+#_io_group_pacman_tile_={1:[]}
+_io_group_pacman_tile_={1:list(range(1,9,1))}
 #_io_group_pacman_tile_={2:list(range(1,9,1))}
 #_io_group_pacman_tile_={1:list(range(1,9,1)), 2:list(range(1,9,1))}
 _pacman_version_='v1rev3b'

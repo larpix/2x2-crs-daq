@@ -181,7 +181,7 @@ def reset(c, config=None, enforce=False, verbose=False, modify_power=False, vdda
     c.io.group_packets_by_io_group = False # throttle the data rate to insure no FIFO collisions
     for io_group, io_channels in c.network.items():
         for io_channel in io_channels:
-            c.init_network(io_group, io_channel, modify_mosi=False)
+            c.init_network(io_group, io_channel, modify_mosi=True)
             #c.init_network(io_group, io_channel, modify_mosi=True)
 
             
@@ -349,7 +349,24 @@ def main(controller_config=_default_controller_config, pacman_version=_default_p
     c.io.double_send_packets = False
     c.io.group_packets_by_io_group = False
     if verbose: print('base configuration successfully enforced')
-    
+  
+    recheck=True
+    if recheck:
+        for chip_key in tqdm(c.chips,desc='re-checking chip configs...',ncols=80,smoothing=0):
+            ioch = int(chip_key.io_channel)
+            iog = int(chip_key.io_group)
+            if current[iog][ioch]==0: 
+                current[iog]=[0]*33
+                current[iog][ioch]=1
+                pacman_base.enable_pacman_uart_from_io_channel(c.io, iog, [ioch])
+        #chip_registers = [(chip_key, i) for i in [82,83,125,129]]
+            chip_registers = [(chip_key, i) for i in range(c[chip_key].config.num_registers)]
+            ok,diff = c.verify_registers(chip_registers, timeout=0.1, n=5)
+            if not ok:
+                print(diff,'\nconfig error on chips',list(diff.keys())) 
+     
+
+
     if hasattr(c,'logger') and c.logger: c.logger.record_configs(list(c.chips.values()))
     if verbose: print('[FINISH BASE]')
     if return_bad_keys: return c, []

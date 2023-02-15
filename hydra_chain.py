@@ -253,7 +253,7 @@ def test_network(c, io_group, io_channels, paths):
                         #        pbar.update(1)
                         #        continue
 
-                        ok, diff = c.enforce_registers([(next_key, reg) for reg in range(5,225)], timeout=0.2, n=2)
+                        ok, diff = c.enforce_registers([(next_key, reg) for reg in range(5,225)], timeout=0.4, n=5, n_verify=5)
                         #ok, diff = c.enforce_configuration(next_key)
                         pbar.update(1)
                         if ok:
@@ -265,7 +265,10 @@ def test_network(c, io_group, io_channels, paths):
                                 arr.add_onesided_excluded_link((prev_key.chip_id, next_key.chip_id))
                                 still_stepping[ipath] = False
                                 valid[ipath] = False
+                                print(ok, diff)
+                                return False
         pbar.close()
+        print('returning:', all(valid))
         return all(valid)
 
 def main(pacman_tile, io_group, pacman_version, vdda=0, config_name=None, exclude=None):
@@ -317,7 +320,7 @@ def hydra_chain(io_group, pacman_tile, pacman_version, vdda, exclude=None, first
             if type(exclude)==int: arr.add_excluded_chip(exclude)
             else:
                 for chip in exclude: arr.add_excluded_chip(chip)
-        io_channels = [ 1 + 4*(pacman_tile - 1) + n for n in range(3)]
+        io_channels = [ 1 + 4*(pacman_tile - 1) + n for n in range(4)]
         #io_channels = [9,10,12]
         print("--------------------------------------------")
         print("get_initial_controller(",io_group,",",io_channels,",",vdda,",",pacman_version,")")

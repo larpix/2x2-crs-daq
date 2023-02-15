@@ -8,7 +8,7 @@ import time
 
 _default_chip_key='All'
 _default_register=None
-_default_length=2048
+_default_length=0.25
 _default_controller_config=None
 
 def main(chip_key=_default_chip_key, \

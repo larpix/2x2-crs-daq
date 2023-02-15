@@ -17,7 +17,8 @@ def flush_data(c, runtime=0.1, rate_limit=0., max_iterations=10):
         if len(c.reads[-1])/runtime<=rate_limit:
             break
 
-def data(c, runtime, packet, runtype, LRS, record_configs=True):
+
+def data(c, runtime, packet, runtype, LRS=False, record_configs=True):
     now=time.strftime("%Y_%m_%d_%H_%M_%Z")
     if packet==True:
         fname=runtype+'-packets-'+now+'.h5'
@@ -53,12 +54,13 @@ def data(c, runtime, packet, runtype, LRS, record_configs=True):
                 if c.io.raw_filename and os.path.isfile(c.io.raw_filename):
                     counter = rhdf5.len_rawfile(c.io.raw_filename, attempts=0)
                     print('average message rate: {:0.2f} Hz\r'.format( (counter-last_counter)/data_rate_refresh ),end='') 
-                    post = 'datarate,sens=larpix1 value={:0.02f}'.format((counter-last_counter)/(data_rate_refresh))
-                    subprocess.call(["curl","--silent","-XPOST", "http://130.92.128.162:8086/write?db=singlemodule_nov2020", "--data-binary", post])
+                    if LRS:
+                        post = 'datarate,sens=larpix1 value={:0.02f}'.format((counter-last_counter)/(data_rate_refresh))
+                        subprocess.call(["curl","--silent","-XPOST", "http://130.92.128.162:8086/write?db=singlemodule_nov2020", "--data-binary", post])
                     last_counter=counter
                 data_rate_start = now
                 data_rate_counter = 0
-            if now>run_start+runtime: break
+            if now>(run_start+runtime): break
         c.stop_listening()
         if LRS: 
             subprocess.call(["echo 0 > ~/.adc_watchdog_file"],shell=True) #stop LRS
@@ -67,9 +69,7 @@ def data(c, runtime, packet, runtype, LRS, record_configs=True):
         c.io.join()
         if record_configs:
             c.loggertempB = larpix.logger.HDF5Logger(c.io.raw_filename)
-            c.loggertempB.record_configs(list(c.chips.values()))
-    return fname
-        
+
 
 async def async_reconcile_configuration(c, chip_keys, verbose, \
                                         timeout=0.01, connection_delay=0.01, \

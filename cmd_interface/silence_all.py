@@ -55,7 +55,7 @@ def main(controller_config=_default_controller_config,\
     
     ok, diff = c.enforce_registers(chip_reg_pairs, timeout=0.2, connection_delay=0.1, n=5, n_verify=5)
     
-    print(ok)
+    print(ok, diff)
 
     return c, c.io
 
