@@ -143,7 +143,7 @@ def main(LRS=_default_LRS, \
             pacman_base.enable_pacman_uart_from_tile(io, iog, \
                                                      _io_group_pacman_tile_[iog])
         filename = utility_base.data(c, runtime, False, file_prefix, LRS)
-        shutil.move(_current_dir_+filename, _destination_dir_+filename)
+        #shutil.move(_current_dir_+filename, _destination_dir_+filename)
         for iog in _io_group_pacman_tile_.keys():
             io.set_reg(0x18, 0, io_group=iog)
         ctr+=1
