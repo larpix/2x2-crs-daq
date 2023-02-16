@@ -31,8 +31,8 @@ _current_dir_='/home/daq/PACMANv1rev4/commission/'
 _destination_dir_='/data/LArPix/Module2_Nov2022/TPC12_run2/'
 #_io_group_pacman_tile_={9:[1]}
 #_io_group_pacman_tile_={2:[2]}
-_io_group_pacman_tile_={1:[3]}
-#_io_group_pacman_tile_={1:list(range(1,9,1)), 2:list(range(1,9,1))}
+#_io_group_pacman_tile_={1:[3]}
+_io_group_pacman_tile_={1:list(range(1,9,1))}
 _io_group_asic_version_={1:2, 2:2}
 _vdda_dac_=[47000]*8
 _vddd_dac_=[31000]*8
@@ -49,6 +49,7 @@ def main(file_prefix=_default_file_prefix, \
          r_term=_default_r_term, \
          i_rx=_default_i_rx, \
          controller_config=None,
+         asic_config=None,\
          resume=False,
          **kwargs):
    
@@ -152,7 +153,7 @@ def main(file_prefix=_default_file_prefix, \
                 time.sleep(1)
             else: 
                 print('starting main')
-                c = v2a_base.main(controller_config=controller_config, pacman_version=_iog_pacman_version_[iog], resume=resume)
+                c = v2a_base.main(controller_config=controller_config, pacman_version=_iog_pacman_version_[iog], asic_config=asic_config, resume=resume)
                 io = c.io
                 return c, c.io
 
@@ -165,6 +166,8 @@ def main(file_prefix=_default_file_prefix, \
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('--asic_config', default=None, \
+                        type=str, help='''Directory with JSON files giving ASIC configuration registers''')
     parser.add_argument('--controller_config', default=None, \
                         type=str, help='''Controller config for v2a tiles only''')
     parser.add_argument('--file_prefix', default=_default_file_prefix, \

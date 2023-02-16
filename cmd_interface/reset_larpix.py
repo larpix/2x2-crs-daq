@@ -24,7 +24,7 @@ def main(chip_key=_default_chip_key, \
     mclock = 10e6
     for io_group, io_channels in c.network.items():
         c.io.reset_larpix(length=int(length*mclock), io_group=int(io_group) )
-    
+        time.sleep(length) 
     return c, c.io
 
 

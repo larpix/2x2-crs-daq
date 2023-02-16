@@ -11,7 +11,7 @@ import time
 from base import utility_base
 from base import pacman_base
 from tqdm import tqdm
-
+from base import config_loader
 from base import check_power
 
 LARPIX_10X10_SCRIPTS_VERSION='v1.0.3'
@@ -227,7 +227,7 @@ def reset(c, config=None, enforce=False, verbose=False, modify_power=False, vdda
     if hasattr(c,'logger') and c.logger: c.logger.record_configs(list(c.chips.values()))
     return c
         
-def main(controller_config=_default_controller_config, pacman_version=_default_pacman_version, logger=_default_logger, vdda=46020, vddd=40605, reset=_default_reset, enforce=True, no_enforce=False, verbose=True, modify_power=True, return_bad_keys=False, retry=0, resume=False, **kwargs):
+def main(controller_config=_default_controller_config, pacman_version=_default_pacman_version, logger=_default_logger, vdda=46020, vddd=40605, asic_config=None, reset=_default_reset, enforce=True, no_enforce=False, verbose=True, modify_power=True, return_bad_keys=False, retry=0, resume=False, **kwargs):
     if verbose: print('[START BASE]')
     ###### create controller with pacman io
     print(pacman_version) 
@@ -295,14 +295,16 @@ def main(controller_config=_default_controller_config, pacman_version=_default_p
     ##### issue soft reset (resets state machines, configuration memory untouched)
     c.io.reset_larpix(length=24)
 
+    if not (asic_config is None):
+        config_loader.load_config_from_directory(c, asic_config)
 
     ##### setup low-level registers to enable loopback
-    if verbose: print('set base configuration: Vref DAC, Vcm DAC, ADC hold delay, MISO differential')
+    if verbose: print('setting base configuration')
     chip_config_pairs=[]
     for chip_key, chip in reversed(c.chips.items()):
         initial_config = deepcopy(chip.config)
-        c[chip_key].config.vref_dac = 185 # register 82
-        c[chip_key].config.vcm_dac = 41 # register 83
+        c[chip_key].config.vref_dac = 223 # register 82
+        c[chip_key].config.vcm_dac = 68 # register 83
         c[chip_key].config.adc_hold_delay = 15 # register 129
         c[chip_key].config.enable_miso_differential = [1,1,1,1] # register 125
         chip_config_pairs.append((chip_key,initial_config))

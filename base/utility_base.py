@@ -11,6 +11,46 @@ from signal import signal, SIGINT
 
 global oldfilename
 
+_broadcast_disable_nwrite=3
+
+def broadcast_disable(c, target_chips=None):
+    broadcast_form = '{}-{}-255'
+
+    target_channels = set()
+
+    if not (target_chips is None):
+        for chip in target_chips: target_channels.add( (chip.io_group, chip.io_channel) )
+
+    target_channels = list(target_channels)
+
+    for io_group, io_channels in c.network.items():
+        for io_channel in io_channels:
+            broadcast=broadcast_form.format(io_group, io_channel)
+
+            if not (target_chips is None):
+                if not ( (io_group, io_channel) in target_channels): continue
+
+            if not (broadcast in c.chips): c.add_chip(broadcast)
+
+            #print('Broadcast disable on (io_group, io_channel)=(', io_group, ',', io_channel, ')' )
+
+            c[broadcast].config.channel_mask = [0]*64
+            c[broadcast].config.test_mode_uart0 = 0
+            c[broadcast].config.test_mode_uart1 = 0
+            c[broadcast].config.test_mode_uart2 = 0
+            c[broadcast].config.test_mode_uart3 = 0
+
+            for __ in range(_broadcast_disable_nwrite):
+                c.write_configuration(broadcast, 'test_mode_uart0')
+                c.write_configuration(broadcast, 'test_mode_uart1')
+                c.write_configuration(broadcast, 'test_mode_uart2')
+                c.write_configuration(broadcast, 'test_mode_uart3')
+                c.write_configuration(broadcast, 'channel_mask')
+
+            c.remove_chip(broadcast)
+
+
+
 def flush_data(c, runtime=0.1, rate_limit=0., max_iterations=10):
     for _ in range(max_iterations):
         c.run(runtime, 'flush data')
@@ -305,7 +345,6 @@ def unique(io_group, io_channel, chip_id, channel_id):
 def unique_channel_id(d):
     return ((d['io_group'].astype(int)*1000+d['io_channel'].astype(int))*1000 \
             + d['chip_id'].astype(int))*100 + d['channel_id'].astype(int)
-
 
 def unique_to_channel_id(unique):
     return unique % 100
