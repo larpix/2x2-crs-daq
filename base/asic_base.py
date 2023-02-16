@@ -506,8 +506,20 @@ def enable_pedestal_config_by_io_channel(c, io, chips, vref_dac=185, \
     chip_reg_pairs=c.differential_write_configuration(chip_config_pairs, \
                                                       write_read=0, \
                                                       connection_delay=0.01)
-    for chip_key in chips:
-        ok, diff = utility_base.reconcile_configuration(c, chip_key, False)
+    
+    all_ok = True
+    all_diff = {}
+    if True:
+        ok, diff = c.enforce_registers(chip_reg_pairs,timeout=0.1, n=10, n_verify=2)
+        if not ok:
+            all_ok = ok
+            all_diff.update(diff)
+    
+    if all_ok: 
+        print('Done')
+    else:
+        print(all_diff)
+
     io.set_reg(0x18, 0, io_group=chips[0].io_group)
     io.group_packets_by_io_group=False
     io.double_send_packets=False    

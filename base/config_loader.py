@@ -42,7 +42,7 @@ def parse_disabled_json(disabled_json):
         raise RuntimeError('Disabled list does not exist')
 
     disabled_list = {}
-    with open(disabled_list, 'r') as f: disabled_list=json.load(f)
+    with open(disabled_json, 'r') as f: disabled_list=json.load(f)
 
     channel_masks = {}
     for key in disabled_list:
