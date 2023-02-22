@@ -35,7 +35,7 @@ def main(input_file=_default_input_file, \
 					dpm = data['channel_id']==channel
 					total_channels += 1
 					all_rates.append(sum(dpm.astype(int))/total_n_packets)
-					if sum(dpm.astype(int))/total_n_packets >0.00001: #this channel accounts for more than 0.1% of total rate (avg should be 0.001%)
+					if sum(dpm.astype(int))/total_n_packets >0.0005: #this channel accounts for more than 0.1% of total rate (avg should be 0.001%)
 						count+=1
 						print(key, channel, '\t rate fraction:', sum(dpm.astype(int))/total_n_packets)
 						if key in disable: disable[key].append(int(channel))

@@ -95,8 +95,6 @@ def main(chip_key=_default_chip_key, \
         c[broadcast].config.test_mode_uart1=0
         c[broadcast].config.test_mode_uart2=0
         c[broadcast].config.test_mode_uart3=0
-        c[broadcast].config.channel_mask=[1]*64
-        c[broadcast].config.csa_enable=[0]*64
 
         for i in range(25):
             c.write_configuration(broadcast, 'test_mode_uart0')

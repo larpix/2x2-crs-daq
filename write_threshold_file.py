@@ -122,7 +122,9 @@ def get_key_channel(channel):
 
 
 def main(thresholdfile, pedfile):
-    
+   
+    #get_channel_dict(pedfile, tag='ped', plot=False)
+
     all_thresholds={}
     allthr=[]
     pedestal = {}
@@ -131,28 +133,15 @@ def main(thresholdfile, pedfile):
     thresh = {}
     with open(thresholdfile, 'r') as f: thresh=json.load(f)
 
+    allthr=[]
+    thr={}
     for channel in thresh.keys():
-        chkey, chan = get_key_channel(channel)
-    
-        all_ios = unique_to_possible_io_channels(channel)
-        lookup_key=''
-        for io in all_ios:
-            look=chkey='{}-{}-{}'.format(iog(int(channel)), io, chip_id(int(channel)))
-            if look in pedestal.keys():
-                lookup_key=look
-                break
-
-        if lookup_key=='': continue
-            
-        for cch in range(0, 64):
-            if not pedestal[lookup_key][cch][0]>0: continue
-            
-            if not chkey in all_thresholds.keys():
-                all_thresholds[chkey]=[-1]*64
-                all_thresholds[chkey][cch]=thresh[channel][0]-convert_adc_to_mv(pedestal[lookup_key][cch][0])
-                allthr.append(thresh[channel][0]-convert_adc_to_mv(pedestal[lookup_key][cch][0]))
-
-
+        if not channel in pedestal.keys():
+            print(channel)
+            continue
+        if thresh[channel][2]>2.: continue 
+        allthr.append(thresh[channel][1]-pedestal[channel][0])
+        thr[channel]=thresh[channel][1]-pedestal[channel][0]
     fig=plt.figure()
     ax=fig.add_subplot()
     ax.set_title('Extracted Thresholds: Calo0 Run')
@@ -161,7 +150,7 @@ def main(thresholdfile, pedfile):
     ax.hist(allthr, bins=100)#, range=(100, 300))
 
 
-    with open('threshold-log.json', 'w') as f: json.dump(all_thresholds, f, indent=4)
+    with open('threshold-log.json', 'w') as f: json.dump(thr, f, indent=4)
     plt.show()
 
 

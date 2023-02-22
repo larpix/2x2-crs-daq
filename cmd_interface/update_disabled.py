@@ -5,7 +5,7 @@ import larpix.io
 import argparse
 import shutil
 import time
-
+import config_loader
 
 _default_chip_key='All'
 _default_register='channel_mask'
@@ -16,7 +16,7 @@ def main(chip_key=_default_chip_key, \
         value=_default_value,\
         controller_config=_default_controller_config,\
         disabled_json=None,\
-        old_disabled_json=None,\
+        asic_config=None,\
         channel=None,
          **kwargs):
 
@@ -31,27 +31,22 @@ def main(chip_key=_default_chip_key, \
     print('loading controller:')
     c.load(controller_config)
     print('done')
-        
+    
+    if not (asic_config is None):
+        config_loader.load_config_from_directory(c, asic_config)
+
     disabled={}
     with open(disabled_json, 'r') as f: disabled=json.load(f)
     
-    disabled_old={}
-    with open(old_disabled_json, 'r') as f: disabled_old=json.load(f)
-
     #mask[channel]=1
     chip_reg_pairs=[]
     
     print('Writing Disable...')
     chip_reg_pairs=[]
     for chip in disabled.keys():
-        if not chip in c.chips: continue#c.add_chip(chip)
-        d=disabled[chip]
-        d_old=[]
-        if chip in disabled_old.keys():
-            d_old=disabled_old[chip]
-        print('disabling channels, ', d+d_old )
-        mask=[1 if i in (d_old+d) else 0 for i in range(64)]
-        setattr(c[chip].config,register,mask)
+        if not chip in c.chips: 
+            print(chip, 'not found')
+            continue#c.add_chip(chip)
         chip_reg_pairs.append((chip, c[chip].config.register_map[register]))
         c.write_configuration(chip, register)
         c.write_configuration(chip, register)  
@@ -76,8 +71,8 @@ if __name__=='__main__':
                         type=str, help='''Register to set''')
     parser.add_argument('--disabled_json', default=_default_controller_config,\
                         type=str, help='''Path to hydra config JSON ''')
-    parser.add_argument('--old_disabled_json', default=_default_controller_config,\
-                        type=str, help='''Path to hydra config JSON ''')
+    parser.add_argument('--asic_config', default=_default_controller_config,\
+                        type=str, help='''path to asic config JSON dir ''')
 
 
 

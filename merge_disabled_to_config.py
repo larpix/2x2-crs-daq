@@ -12,7 +12,10 @@ def main(*files, disabled_json, **kwargs):
                 chip_key=config['CHIP_KEY']
                 
                 if chip_key in channel_masks.keys():
-                    config['channel_mask']=channel_masks[chip_key]
+                    _s = sum(config['channel_mask'])
+                    mask = np.array(config['channel_mask'])+np.array(channel_masks[chip_key])
+                    config['channel_mask'] = [1 if val>0 else 0 for val in mask]
+                    print('disabled', sum(config['channel_mask'])-_s, 'keys')
                     config['csa_enable']=[1 if val==0 else 0 for val in channel_masks[chip_key]]
 
                 with open(file, 'w') as f: json.dump(config, f, indent=4)
