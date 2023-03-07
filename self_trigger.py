@@ -30,14 +30,14 @@ _default_tx_diff=0
 _default_tx_slice=15
 _default_r_term=2
 _default_i_rx=8
-_current_dir_='/home/daq/PACMANv1rev3b/commission/take2/2x2-crs-daq/'
-_destination_dir_='/data/LArPix/Module3_Feb2023/ramp_up/'
+_current_dir_='/home/daq/PACMANv1rev3b/run2/2x2-crs-daq/'
+_destination_dir_='/data/LArPix/Module3_Feb2023/run2/tpc12/'
 
 #_io_group_pacman_tile_={1:list(range(1,9,1))}
 #_io_group_pacman_tile_={2:list(range(1,9,1))}
-#_io_group_pacman_tile_={1:list(range(1,9,1)), 2:list(range(1,9,1))}
-_io_group_pacman_tile_={1:[1]}
-_pacman_version_='v1rev4'
+_io_group_pacman_tile_={1:list(range(1,9,1)), 2:list(range(1,9,1))}
+#_io_group_pacman_tile_={1:[1], 2:[]}
+_pacman_version_='v1rev3b'
 _asic_version_='2b'
 
 global oldfilename
@@ -113,7 +113,7 @@ def main(LRS=_default_LRS, \
         c.logger.flush()
         c.logger.disable()
         c.reads=[]
- #       shutil.move(_current_dir_+c.logger.filename, _destination_dir_+c.logger.filename)
+        shutil.move(_current_dir_+c.logger.filename, _destination_dir_+c.logger.filename)
 
 
     for iog in _io_group_pacman_tile_.keys():
@@ -124,7 +124,7 @@ def main(LRS=_default_LRS, \
     ctr=0
     while ctr<file_count:
         filename = utility_base.data(c, runtime, False, file_prefix, LRS)
-#        shutil.move(_current_dir_+filename, _destination_dir_+filename)
+        shutil.move(_current_dir_+filename, _destination_dir_+filename)
         ctr+=1
     for iog in _io_group_pacman_tile_.keys():
         io.set_reg(0x18, 0, io_group=iog)

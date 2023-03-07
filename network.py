@@ -30,14 +30,14 @@ _default_i_rx=8
 _current_dir_='/home/daq/PACMANv1rev4/commission/'
 _destination_dir_='/data/LArPix/Module2_Nov2022/TPC12_run2/'
 #_io_group_pacman_tile_={9:[1]}
-#_io_group_pacman_tile_={2:[2]}
-#_io_group_pacman_tile_={1:[3]}
-_io_group_pacman_tile_={1:list(range(1,9,1))}
+#_io_group_pacman_tile_={2:[7]}
+_io_group_pacman_tile_={1:[6]}
+#_io_group_pacman_tile_={1:list(range(1,9,1)), 2:list(range(1,9,1))}
 _io_group_asic_version_={1:2, 2:2}
 _vdda_dac_=[47000]*8
 _vddd_dac_=[31000]*8
 _iog_pacman_version_={1: 'v1rev3b', 2 : 'v1rev3b'}
-_iog_exclude={1:{3:[46, 56]}, 2:{} }
+_iog_exclude={1:{}, 2:{} }
 
 
 def main(file_prefix=_default_file_prefix, \

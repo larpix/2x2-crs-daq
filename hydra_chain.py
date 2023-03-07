@@ -30,7 +30,7 @@ def get_temp_key(io_group, io_channel):
 
 def get_good_roots(c, io_group, io_channels):
         #root chips with external connections to pacman
-        root_chips = [11, 41, 71, 101]
+        root_chips = [ 71, 101]
         print('getting good roots...')
         good_tile_channel_indices = []
         for n, io_channel in enumerate(io_channels):
@@ -134,11 +134,11 @@ def get_initial_controller(io_group, io_channels, vdda=0, pacman_version='v1rev3
         #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         #resetting larpix
-        #c.io.reset_larpix(length=10240, io_group=io_group)
-        #for io_channel in io_channels:
-        #        c.io.set_uart_clock_ratio(io_channel, clk_ctrl_2_clk_ratio_map[0], io_group=io_group)
-        #        print("setting uart clock ratio to:",clk_ctrl_2_clk_ratio_map[0]) 
-        ###################################################################################
+        c.io.reset_larpix(length=10240, io_group=io_group)
+        for io_channel in io_channels:
+                c.io.set_uart_clock_ratio(io_channel, clk_ctrl_2_clk_ratio_map[0], io_group=io_group)
+                print("setting uart clock ratio to:",clk_ctrl_2_clk_ratio_map[0]) 
+        ##################################################################################
         #pacman_base.enable_pacman_uart_from_tile(c.io, io_group, [tile] )
         #pacman_base.enable_pacman_uart_from_io_channels(c.io, io_group, io_channels )
         
@@ -233,12 +233,25 @@ def test_network(c, io_group, io_channels, paths):
                                 continue
                         next_key = larpix.key.Key(io_group, io_channels[ipath], path[step])
                         prev_key = larpix.key.Key(io_group, io_channels[ipath], path[step-1])
+                        
+                        print('trying to enable {} from {}'.format(str(next_key), str(prev_key)))
+                        broadcast ='{}-{}-255'.format(io_group, prev_key.io_channel)
+                        c.add_chip(broadcast)
                         if prev_key.chip_id in root_chips:
                                 c[prev_key].config.chip_id = prev_key.chip_id
                                 c[prev_key].config.enable_miso_downstream = arr.get_uart_enable_list(prev_key.chip_id)
                                 c[prev_key].config.enable_miso_differential = [1,1,1,1]
+                                c.write_configuration(broadcast, 'test_mode_uart0')
+                                c.write_configuration(broadcast, 'test_mode_uart1')
+                                c.write_configuration(broadcast, 'test_mode_uart2')
+                                c.write_configuration(broadcast, 'test_mode_uart3')
                                 c.write_configuration(prev_key, 'enable_miso_downstream')
-
+                        c[prev_key].config.enable_miso_differential = [1,1,1,1]
+                        c.write_configuration(broadcast, 'test_mode_uart0')
+                        c.write_configuration(broadcast, 'test_mode_uart1')
+                        c.write_configuration(broadcast, 'test_mode_uart2')
+                        c.write_configuration(broadcast, 'test_mode_uart3')
+                        c.remove_chip(broadcast)
                         c[prev_key].config.enable_miso_upstream = arr.get_uart_enable_list(prev_key.chip_id, next_key.chip_id)
                         c.write_configuration(prev_key, 'enable_miso_upstream')
 
@@ -320,7 +333,7 @@ def hydra_chain(io_group, pacman_tile, pacman_version, vdda, exclude=None, first
             if type(exclude)==int: arr.add_excluded_chip(exclude)
             else:
                 for chip in exclude: arr.add_excluded_chip(chip)
-        io_channels = [ 1 + 4*(pacman_tile - 1) + n for n in range(4)]
+        io_channels = [ 1 + 4*(pacman_tile - 1) + n for n in range(2, 4)]
         #io_channels = [9,10,12]
         print("--------------------------------------------")
         print("get_initial_controller(",io_group,",",io_channels,",",vdda,",",pacman_version,")")

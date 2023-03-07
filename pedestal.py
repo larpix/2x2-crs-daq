@@ -20,8 +20,8 @@ _default_runtime=300
 _default_file_count=1
 _default_periodic_trigger_cycles=200000
 _default_periodic_reset_cycles=4096 #409600
-_default_vref_dac=223 ###cold 223 ### warm 185
-_default_vcm_dac=68 ### cold 68 ### warm 50
+_default_vref_dac=185 ###cold 223 ### warm 185
+_default_vcm_dac=50 ### cold 68 ### warm 50
 _default_ref_current_trim=0
 _default_tx_diff=0
 _default_tx_slice=15
@@ -88,13 +88,13 @@ def main(LRS=_default_LRS, \
             c.write_configuration(chip_key,reg)
     
 
-    #if disable_logger==False:
-    #    now=time.strftime("%Y_%m_%d_%H_%M_%Z")
-    #    if file_prefix!=None: fname=file_prefix+'-pedestal-config-'+now+'.h5'
-    #    else: fname='pedestal-config-'+now+'.h5'
-    #    c.logger = larpix.logger.HDF5Logger(filename=fname)
-    #    print('filename: ', c.logger.filename)
-    #    c.logger.enable()
+    if disable_logger==False:
+        now=time.strftime("%Y_%m_%d_%H_%M_%Z")
+        if file_prefix!=None: fname=file_prefix+'-pedestal-config-'+now+'.h5'
+        else: fname='pedestal-config-'+now+'.h5'
+        c.logger = larpix.logger.HDF5Logger(filename=fname)
+        print('filename: ', c.logger.filename)
+        c.logger.enable()
 
     iog_ioc={}
     for chip_key in c.chips:
@@ -131,10 +131,10 @@ def main(LRS=_default_LRS, \
             print('\n\n*****WARNING: Pedestal triggering error(s).*****')
         print('Pedestal triggering setup on IO group ',g_c[0])
 
-    #if disable_logger==False:
-    #    c.logger.flush()
-    #    c.logger.disable()
-    #    c.reads=[]
+    if disable_logger==False:
+        c.logger.flush()
+        c.logger.disable()
+        c.reads=[]
     #    shutil.move(_current_dir_+c.logger.filename, _destination_dir_+c.logger.filename)
 
     ctr=0
