@@ -12,6 +12,7 @@ import json
 from collections import Counter
 import copy
 from base import config_loader
+from RUNENV import *
 
 _default_controller_config=None
 _default_pedestal_file=None

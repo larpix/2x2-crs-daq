@@ -18,8 +18,10 @@ import time
 from time import perf_counter
 import shutil
 
+from RUNENV import *
+
 _default_file_prefix=None
-_default_disable_logger=False
+_default_disable_logger=True
 _default_verbose=False
 _default_ref_current_trim=0
 _default_tx_diff=0
@@ -27,6 +29,7 @@ _default_tx_slice=15
 _default_r_term=2
 _default_i_rx=8
 _default_recheck=False
+
 
 def main(file_prefix=_default_file_prefix, \
          disable_logger=_default_disable_logger, \
@@ -60,9 +63,9 @@ def main(file_prefix=_default_file_prefix, \
     
          
     #_io_group_pacman_tile_={1: list(range(1, 9, 1)), 2:list(range(1,9,1))}
-    for iog in _io_group_pacman_tile_.keys():
+    for iog in io_group_pacman_tile_.keys():
        
-        iog_ioc_cid=utility_base.iog_tile_to_iog_ioc_cid(_io_group_pacman_tile_, _io_group_asic_version_[iog])
+        iog_ioc_cid=utility_base.iog_tile_to_iog_ioc_cid(io_group_pacman_tile_, io_group_asic_version_[iog])
         #pacman_base.disable_all_pacman_uart(c.io, iog)
         #VERSION_SPECIFIC
 #        if _io_group_asic_version_[iog]=='2b': pacman_base.invert_pacman_uart(c.io, iog, _io_group_asic_version_[iog], \
@@ -89,9 +92,9 @@ def main(file_prefix=_default_file_prefix, \
     
     print('setup software controller to root chips')
     
-    for iog in _io_group_pacman_tile_.keys():
+    for iog in io_group_pacman_tile_.keys():
         print('Configuring IO Group', iog)
-        if _io_group_asic_version_[iog]=='2b':
+        if io_group_asic_version_[iog]=='2b':
             root_keys=[]        
             for g_c_id in iog_ioc_cid:
                 print(g_c_id)
@@ -125,30 +128,30 @@ def main(file_prefix=_default_file_prefix, \
                     unconfigured.extend(out_of_network)
             network_file = network_base.write_network_to_file(c, file_prefix, _io_group_pacman_tile_,\
                                        unconfigured)
-            shutil.move(_current_dir_+network_file, _destination_dir_+network_file)
+            shutil.move(current_dir_+network_file, destination_dir_+network_file)
 
             if disable_logger==False:
                 c.logger.flush()
                 c.logger.disable()
                 c.reads=[]
-                shutil.move(_current_dir_+fname, _destination_dir_+fname)
+                shutil.move(current_dir_+fname, destination_dir_+fname)
             
             return c, c.io
 
-        elif _io_group_asic_version_[iog]==2:  
+        elif io_group_asic_version_[iog]==2:  
             print('configuring v2a network...')
             if controller_config is None: 
                 config_name = hydra_chain.main(io_group=iog, pacman_tile=_io_group_pacman_tile_[iog], pacman_version=_iog_pacman_version_[iog], config_name=config_name, exclude=_iog_exclude[iog])
                 time.sleep(1)
             else: 
                 print('starting main')
-                c = v2a_base.main(controller_config=controller_config, pacman_version=_iog_pacman_version_[iog], asic_config=asic_config, resume=resume, recheck=recheck)
+                c = v2a_base.main(controller_config=controller_config, pacman_version=iog_pacman_version_[iog], asic_config=asic_config, resume=resume, recheck=recheck)
                 io = c.io
                 return c, c.io
 
         c = v2a_base.main(controller_config=config_name, pacman_version=_iog_pacman_version_[iog], recheck=recheck)
         io = c.io
-
+        
         return c, io
 
     

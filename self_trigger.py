@@ -11,6 +11,7 @@ import json
 import shutil
 import subprocess
 from signal import signal, SIGINT
+from RUNENV import *
 
 _default_LRS=False #True
 _default_file_prefix='self_trigger_'
@@ -104,10 +105,10 @@ def main(LRS=_default_LRS, \
         c.logger.flush()
         c.logger.disable()
         c.reads=[]
-        shutil.move(_current_dir_+c.logger.filename, _destination_dir_+c.logger.filename)
+        shutil.move(current_dir_+c.logger.filename, destination_dir_+c.logger.filename)
 
 
-    for iog in _io_group_pacman_tile_.keys():
+    for iog, __ in c.network.items():
             all_io_channels = list(utility_base.all_io_channels(c, iog))
             print('enabling uarts on io_group', iog, 'io_channels:', all_io_channels)
             pacman_base.enable_pacman_uart_from_io_channel(c.io, iog, all_io_channels)
@@ -115,9 +116,9 @@ def main(LRS=_default_LRS, \
     ctr=0
     while ctr<file_count:
         filename = utility_base.data(c, runtime, False, file_prefix, LRS)
-        shutil.move(_current_dir_+filename, _destination_dir_+filename)
+        shutil.move(current_dir_+filename, destination_dir_+filename)
         ctr+=1
-    for iog in _io_group_pacman_tile_.keys():
+    for iog, __ in c.network.items():
         io.set_reg(0x18, 0, io_group=iog)
     
     return c

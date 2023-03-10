@@ -9,6 +9,7 @@ from datetime import datetime
 import h5py
 import numpy as np
 from collections import Counter
+from RUNENV import *
 
 _default_controller_config=None
 _default_chip_key=None

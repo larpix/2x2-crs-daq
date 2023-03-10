@@ -9,7 +9,7 @@ import argparse
 import time
 import json
 import shutil
-
+from RUNENV import *
 _default_LRS=False
 _default_file_prefix='ped'
 _default_disable_logger=False
@@ -123,16 +123,16 @@ def main(LRS=_default_LRS, \
         c.logger.flush()
         c.logger.disable()
         c.reads=[]
-        shutil.move(_current_dir_+c.logger.filename, _destination_dir_+c.logger.filename)
+        shutil.move(current_dir_+c.logger.filename, destination_dir_+c.logger.filename)
 
     ctr=0
     while ctr<file_count:
-        for iog in _io_group_pacman_tile_.keys():
-            pacman_base.enable_pacman_uart_from_tile(io, iog, \
-                                                     _io_group_pacman_tile_[iog])
+        for iog, ioch in c.network.items():
+            pacman_base.enable_pacman_uart_from_io_channel(io, iog, \
+                                                     ioch)
         filename = utility_base.data(c, runtime, False, file_prefix, LRS)
-        shutil.move(_current_dir_+filename, _destination_dir_+filename)
-        for iog in _io_group_pacman_tile_.keys():
+        shutil.move(current_dir_+filename, destination_dir_+filename)
+        for iog, __ in c.network.items():
             io.set_reg(0x18, 0, io_group=iog)
         ctr+=1
     

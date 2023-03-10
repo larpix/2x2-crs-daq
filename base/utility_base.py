@@ -110,6 +110,8 @@ def data(c, runtime, packet, runtype, LRS=False, record_configs=True):
         if record_configs:
             c.loggertempB = larpix.logger.HDF5Logger(c.io.raw_filename)
 
+    return fname
+
 
 async def async_reconcile_configuration(c, chip_keys, verbose, \
                                         timeout=0.01, connection_delay=0.01, \

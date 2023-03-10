@@ -17,7 +17,7 @@ from base import check_power
 LARPIX_10X10_SCRIPTS_VERSION='v1.0.3'
 
 _default_controller_config=None
-_default_pacman_version='v1rev3'
+_default_pacman_version='v1rev3b'
 _default_logger=False
 _default_reset=True
 
@@ -261,15 +261,17 @@ def main(controller_config=_default_controller_config, pacman_version=_default_p
 
     ##### issue hard reset (resets state machines and configuration memory)
        # resets uart speeds on fpga
-        for io_group, io_channels in c.network.items():
-            if reset and not resume:
-                c.io.reset_larpix(length=10240, io_group=io_group)
-                time.sleep(10240*(1/(10e6)))
-                c.io.reset_larpix(length=10240, io_group=io_group)
-                time.sleep(10240*(1/(10e6)))
+    for io_group, io_channels in c.network.items():
+        print(io_group)
+        if reset and not resume:
+            print('resetting io group:', io_group)
+            c.io.reset_larpix(length=10240, io_group=io_group)
+            time.sleep(10240*(1/(10e6)))
+            c.io.reset_larpix(length=10240, io_group=io_group)
+            time.sleep(10240*(1/(10e6)))
      
-            for io_channel in io_channels:
-                c.io.set_uart_clock_ratio(io_channel, clk_ctrl_2_clk_ratio_map[0], io_group=io_group)
+        for io_channel in io_channels:
+            c.io.set_uart_clock_ratio(io_channel, clk_ctrl_2_clk_ratio_map[0], io_group=io_group)
 
     #c.io.set_reg(0x10014, 0x04, io_group=2)            
     ##### initialize network
