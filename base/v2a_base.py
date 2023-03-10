@@ -227,7 +227,7 @@ def reset(c, config=None, enforce=False, verbose=False, modify_power=False, vdda
     if hasattr(c,'logger') and c.logger: c.logger.record_configs(list(c.chips.values()))
     return c
         
-def main(controller_config=_default_controller_config, pacman_version=_default_pacman_version, logger=_default_logger, vdda=46020, vddd=40605, asic_config=None, reset=_default_reset, enforce=True, no_enforce=False, verbose=True, modify_power=True, return_bad_keys=False, retry=0, resume=False, **kwargs):
+def main(controller_config=_default_controller_config, pacman_version=_default_pacman_version, logger=_default_logger, vdda=46020, vddd=40605, asic_config=None, reset=_default_reset, enforce=True, no_enforce=False, verbose=True, modify_power=True, return_bad_keys=False, retry=0, resume=False, recheck=False, **kwargs):
     if verbose: print('[START BASE]')
     ###### create controller with pacman io
     print(pacman_version) 
@@ -260,13 +260,14 @@ def main(controller_config=_default_controller_config, pacman_version=_default_p
 
 
     ##### issue hard reset (resets state machines and configuration memory)
-    if reset and not resume:
-        c.io.reset_larpix(length=10240)
-        time.sleep(10240*(1/(10e6)))
-        c.io.reset_larpix(length=10240)
-        time.sleep(10240*(1/(10e6)))
-        # resets uart speeds on fpga
+       # resets uart speeds on fpga
         for io_group, io_channels in c.network.items():
+            if reset and not resume:
+                c.io.reset_larpix(length=10240, io_group=io_group)
+                time.sleep(10240*(1/(10e6)))
+                c.io.reset_larpix(length=10240, io_group=io_group)
+                time.sleep(10240*(1/(10e6)))
+     
             for io_channel in io_channels:
                 c.io.set_uart_clock_ratio(io_channel, clk_ctrl_2_clk_ratio_map[0], io_group=io_group)
 
@@ -293,7 +294,8 @@ def main(controller_config=_default_controller_config, pacman_version=_default_p
 
 
     ##### issue soft reset (resets state machines, configuration memory untouched)
-    c.io.reset_larpix(length=24)
+    for io_group, io_channels in c.network.items():
+        c.io.reset_larpix(length=24, io_group=io_group)
 
     if not (asic_config is None):
         config_loader.load_config_from_directory(c, asic_config)
@@ -352,7 +354,6 @@ def main(controller_config=_default_controller_config, pacman_version=_default_p
     c.io.group_packets_by_io_group = False
     if verbose: print('base configuration successfully enforced')
   
-    recheck=True
     if recheck:
         for chip_key in tqdm(c.chips,desc='re-checking chip configs...',ncols=80,smoothing=0):
             ioch = int(chip_key.io_channel)

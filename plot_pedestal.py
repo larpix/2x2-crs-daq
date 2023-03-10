@@ -9,24 +9,13 @@ _default_input_file=None
 _default_file_prefix=None
 
 
-ped_mean_cut = 45.
-ped_std_cut = 2.
-ped_rate_cut = 50 #Hz
+_ped_mean_cut = 45.
+_ped_std_cut = 2.
+_ped_rate_cut = 50 #Hz
 
 _runtime=120
 
-datadir='/data/LArPix/Module2_Nov2022/commission/Nov16/debug1/'
-
-#datadir = '/data/LArPix/Module2_Nov2022/commission/'
-
 datadict = {}
-
-def get_list_of_h5_files(file_or_dir_name):
-	if os.path.isfile(file_or_dir_name):
-		return [file_or_dir_name]
-	else:
-		base = file_or_dir_name
-		return sorted([base + "/" + name for name in os.listdir(base) if (name[-3:] == ".h5")])
 
 def partition_by_channel(packets, datadict):
     packets=packets[packets['valid_parity']==1]
@@ -68,6 +57,9 @@ def partition_by_channel(packets, datadict):
 
 def main(input_file=_default_input_file, \
          file_prefix=_default_file_prefix,\
+         ped_mean_cut=_ped_mean_cut,\
+         ped_std_cut=_ped_std_cut,\
+         ped_rate_cut=_ped_rate_cut,\
          **kwargs):
     if input_file==None:
         print('Provide an input HDF5 packet file. Exiting.')
@@ -151,7 +143,7 @@ def main(input_file=_default_input_file, \
     fig.savefig(file_prefix+'-ped_mean.png')
     fig2.savefig(file_prefix+'-ped_std.png')
     fig3.savefig(file_prefix+'-ped_mean_vs_std.png')
-    plt.show() 
+    #plt.show() 
     #import json
 
     disable={}
@@ -185,6 +177,12 @@ def main(input_file=_default_input_file, \
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('--ped_mean_cut', default=_ped_mean_cut, \
+                        type=float, help='''Mean value at which to disable channel (ADC), default 50''')
+    parser.add_argument('--ped_std_cut', default=_ped_std_cut, \
+                        type=float, help='''Std. Deviation at which to disable channel (ADC), default 2''')
+    parser.add_argument('--ped_rate_cut', default=_ped_rate_cut, \
+                        type=float, help='''Rate (Hz) at which to disable channel, default 50 Hz''')
     parser.add_argument('--input_file', default=_default_input_file, \
                         type=str, help='''Input HDF5 pakcet file''')
     parser.add_argument('--file_prefix', default=_default_file_prefix, \

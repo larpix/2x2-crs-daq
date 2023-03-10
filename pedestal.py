@@ -11,7 +11,7 @@ import json
 import shutil
 
 _default_LRS=False
-_default_file_prefix=''
+_default_file_prefix='ped'
 _default_disable_logger=False
 _default_verbose=False
 _default_disabled_json=None
@@ -27,18 +27,6 @@ _default_tx_diff=0
 _default_tx_slice=15
 _default_r_term=2
 _default_i_rx=8
-
-_current_dir_='/home/daq/PACMANv1rev3b/commission/take2/2x2-crs-daq/'
-_destination_dir_='/data/LArPix/Module3_Feb2023/commission/'
-
-#_io_group_pacman_tile={2:[3]}
-#_io_group_pacman_tile_={9:[1]}
-#_io_group_pacman_tile_={1:[]}
-_io_group_pacman_tile_={1:list(range(1,9,1))}
-#_io_group_pacman_tile_={2:list(range(1,9,1))}
-#_io_group_pacman_tile_={1:list(range(1,9,1)), 2:list(range(1,9,1))}
-_pacman_version_='v1rev3b'
-_asic_version_='2'
 
 def main(LRS=_default_LRS, \
          resume=False,
@@ -135,7 +123,7 @@ def main(LRS=_default_LRS, \
         c.logger.flush()
         c.logger.disable()
         c.reads=[]
-    #    shutil.move(_current_dir_+c.logger.filename, _destination_dir_+c.logger.filename)
+        shutil.move(_current_dir_+c.logger.filename, _destination_dir_+c.logger.filename)
 
     ctr=0
     while ctr<file_count:
@@ -143,7 +131,7 @@ def main(LRS=_default_LRS, \
             pacman_base.enable_pacman_uart_from_tile(io, iog, \
                                                      _io_group_pacman_tile_[iog])
         filename = utility_base.data(c, runtime, False, file_prefix, LRS)
-        #shutil.move(_current_dir_+filename, _destination_dir_+filename)
+        shutil.move(_current_dir_+filename, _destination_dir_+filename)
         for iog in _io_group_pacman_tile_.keys():
             io.set_reg(0x18, 0, io_group=iog)
         ctr+=1

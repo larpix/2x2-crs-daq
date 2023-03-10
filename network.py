@@ -26,19 +26,7 @@ _default_tx_diff=0
 _default_tx_slice=15
 _default_r_term=2
 _default_i_rx=8
-
-_current_dir_='/home/daq/PACMANv1rev4/commission/'
-_destination_dir_='/data/LArPix/Module2_Nov2022/TPC12_run2/'
-#_io_group_pacman_tile_={9:[1]}
-#_io_group_pacman_tile_={2:[7]}
-_io_group_pacman_tile_={1:[6]}
-#_io_group_pacman_tile_={1:list(range(1,9,1)), 2:list(range(1,9,1))}
-_io_group_asic_version_={1:2, 2:2}
-_vdda_dac_=[47000]*8
-_vddd_dac_=[31000]*8
-_iog_pacman_version_={1: 'v1rev3b', 2 : 'v1rev3b'}
-_iog_exclude={1:{}, 2:{} }
-
+_default_recheck=False
 
 def main(file_prefix=_default_file_prefix, \
          disable_logger=_default_disable_logger, \
@@ -51,6 +39,7 @@ def main(file_prefix=_default_file_prefix, \
          controller_config=None,
          asic_config=None,\
          resume=False,
+         recheck=_default_recheck,
          **kwargs):
    
     c = larpix.Controller()
@@ -153,11 +142,11 @@ def main(file_prefix=_default_file_prefix, \
                 time.sleep(1)
             else: 
                 print('starting main')
-                c = v2a_base.main(controller_config=controller_config, pacman_version=_iog_pacman_version_[iog], asic_config=asic_config, resume=resume)
+                c = v2a_base.main(controller_config=controller_config, pacman_version=_iog_pacman_version_[iog], asic_config=asic_config, resume=resume, recheck=recheck)
                 io = c.io
                 return c, c.io
 
-        c = v2a_base.main(controller_config=config_name, pacman_version=_iog_pacman_version_[iog])
+        c = v2a_base.main(controller_config=config_name, pacman_version=_iog_pacman_version_[iog], recheck=recheck)
         io = c.io
 
         return c, io
@@ -196,6 +185,8 @@ if __name__=='__main__':
                         default=_default_i_rx, \
                         type=int, \
                         help='''Receiver bias current DAC''')
+    parser.add_argument('--recheck', default=_default_recheck, \
+                        action='store_true', help='''Flag to re-check all asic configs after initally enforcing them all ''')
     args = parser.parse_args()
     main(**vars(args))
 

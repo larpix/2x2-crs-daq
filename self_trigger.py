@@ -13,7 +13,7 @@ import subprocess
 from signal import signal, SIGINT
 
 _default_LRS=False #True
-_default_file_prefix='self_trigger_NAME_ME'
+_default_file_prefix='self_trigger_'
 _default_disable_logger=False
 _default_verbose=False
 _default_disabled_json=None
@@ -30,15 +30,6 @@ _default_tx_diff=0
 _default_tx_slice=15
 _default_r_term=2
 _default_i_rx=8
-_current_dir_='/home/daq/PACMANv1rev3b/run2/2x2-crs-daq/'
-_destination_dir_='/data/LArPix/Module3_Feb2023/run2/tpc12/'
-
-#_io_group_pacman_tile_={1:list(range(1,9,1))}
-#_io_group_pacman_tile_={2:list(range(1,9,1))}
-_io_group_pacman_tile_={1:list(range(1,9,1)), 2:list(range(1,9,1))}
-#_io_group_pacman_tile_={1:[1], 2:[]}
-_pacman_version_='v1rev3b'
-_asic_version_='2b'
 
 global oldfilename
 
