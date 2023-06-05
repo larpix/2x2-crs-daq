@@ -116,7 +116,7 @@ def main(input_file=_default_input_file, \
 
 
     fig = plt.figure(figsize=(12,5))
-    fig.suptitle('Module2 Pedestal Mean')
+    fig.suptitle('Pedestal Mean')
     ax = fig.add_subplot()
     ax.hist(datawords, bins=100, alpha=0.7);
     ax.set_xlabel('dataword [adc]')
@@ -124,7 +124,7 @@ def main(input_file=_default_input_file, \
     #plt.legend()
 
     fig2 = plt.figure(figsize=(12,5))
-    fig2.suptitle('Module2 Pedestal Std. Deviation')
+    fig2.suptitle('Pedestal Std. Deviation')
     ax2 = fig2.add_subplot()
     #ax2 = fig.add_subplot()
     ax2.hist(stds, bins=100, range=(0, 10), alpha=0.7);
@@ -132,7 +132,7 @@ def main(input_file=_default_input_file, \
     ax2.set_yscale('log')
     ax2.set_xlim(0, 10)
     fig3 = plt.figure(figsize=(12,5))
-    fig3.suptitle('Module2 Pedestal Mean vs. Pedestal Std. Deviation')
+    fig3.suptitle('Pedestal Mean vs. Pedestal Std. Deviation')
     ax3 = fig3.add_subplot()
     #ax2 = fig.add_subplot()
     ax3.scatter(datawords, stds)
@@ -140,7 +140,7 @@ def main(input_file=_default_input_file, \
     ax3.set_ylabel('std. dev.')
     #ax2.set_yscale('log')
     fig4 = plt.figure(figsize=(12,5))
-    fig4.suptitle('Module2 Pedestal Std. Deviation')
+    fig4.suptitle('Pedestal Std. Deviation')
     ax4 = fig4.add_subplot()
     #ax2 = fig.add_subplot()
     ax4.hist(stds, bins=100, alpha=0.7);
