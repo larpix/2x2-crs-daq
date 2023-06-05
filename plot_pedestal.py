@@ -151,7 +151,7 @@ def main(input_file=_default_input_file, \
     fig.savefig(file_prefix+'-ped_mean.png')
     fig2.savefig(file_prefix+'-ped_std.png')
     fig3.savefig(file_prefix+'-ped_mean_vs_std.png')
-    plt.show() 
+    #plt.show() 
     #import json
 
     disable={}

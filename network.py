@@ -29,8 +29,6 @@ _default_i_rx=8
 
 _current_dir_='/home/daq/PACMANv1rev4/commission/'
 _destination_dir_='/data/LArPix/Module2_Nov2022/TPC12_run2/'
-#_io_group_pacman_tile_={9:[1]}
-#_io_group_pacman_tile_={2:[7]}
 _io_group_pacman_tile_={1:[6]}
 #_io_group_pacman_tile_={1:list(range(1,9,1)), 2:list(range(1,9,1))}
 _io_group_asic_version_={1:2, 2:2}

@@ -30,7 +30,7 @@ def get_temp_key(io_group, io_channel):
 
 def get_good_roots(c, io_group, io_channels):
         #root chips with external connections to pacman
-        root_chips = [ 71, 101]
+        root_chips = [11, 41,  71, 101]
         print('getting good roots...')
         good_tile_channel_indices = []
         for n, io_channel in enumerate(io_channels):
@@ -234,7 +234,7 @@ def test_network(c, io_group, io_channels, paths):
                         next_key = larpix.key.Key(io_group, io_channels[ipath], path[step])
                         prev_key = larpix.key.Key(io_group, io_channels[ipath], path[step-1])
                         
-                        print('trying to enable {} from {}'.format(str(next_key), str(prev_key)))
+                        #print('trying to enable {} from {}'.format(str(next_key), str(prev_key)))
                         broadcast ='{}-{}-255'.format(io_group, prev_key.io_channel)
                         c.add_chip(broadcast)
                         if prev_key.chip_id in root_chips:
@@ -333,8 +333,7 @@ def hydra_chain(io_group, pacman_tile, pacman_version, vdda, exclude=None, first
             if type(exclude)==int: arr.add_excluded_chip(exclude)
             else:
                 for chip in exclude: arr.add_excluded_chip(chip)
-        io_channels = [ 1 + 4*(pacman_tile - 1) + n for n in range(2, 4)]
-        #io_channels = [9,10,12]
+        io_channels = [ 1 + 4*(pacman_tile - 1) + n for n in range(4)]
         print("--------------------------------------------")
         print("get_initial_controller(",io_group,",",io_channels,",",vdda,",",pacman_version,")")
         c = get_initial_controller(io_group, io_channels, vdda, pacman_version)
