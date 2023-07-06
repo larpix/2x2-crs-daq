@@ -127,7 +127,7 @@ def enable_response_trigger_adc_config_by_io_channel(c, io, chips, vref_dac=185,
     #for chip_key in chips:
         #ok, diff = utility_base.reconcile_configuration(c, chip_key, False)
         ## DD 2023/01/30: Only check registers that were being altered 
-        ok, diff = c.enforce_registers(chip_reg_pairs,timeout=0.1, n=10, n_verify=2)
+        ok, diff = c.enforce_registers(chip_reg_pairs,timeout=0.01, n=10, n_verify=2)
         if not ok:
             all_ok = ok
             all_diff.update(diff)
@@ -179,7 +179,7 @@ def regulate_rate_fractional(c, io, io_group, set_rate, disable, sample_time=0.5
                 count+=1
                 print('DISABLE ',chip_key,'  ',channel,'\trate: ',rate,' Hz')
         c.reads=[] 
-        c.enforce_configuration(chips_to_enforce, timeout=0.4, n=5)
+        c.enforce_configuration(chips_to_enforce, timeout=0.02, n=5)
         dname = 'disable-current.json'
         print('Saving disabled list: {}'.format(dname))
         new_disable = {}

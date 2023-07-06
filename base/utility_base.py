@@ -63,11 +63,22 @@ def data(c, runtime, packet, runtype, LRS=False, record_configs=True):
     if packet==True:
         fname=runtype+'-packets-'+now+'.h5'
         c.logger = larpix.logger.HDF5Logger(filename=fname)
+        
+        if LRS: 
+            subprocess.call(["echo 1 > ~/.adc_watchdog_file"],shell=True)  #start LRS
+            print('starting LRS ...')
+
         print('filename: ',c.logger.filename)
         c.logger.enable()
         c.run(runtime,' collecting data')
         c.logger.flush()
         c.logger.disable()
+        
+        if LRS: 
+            subprocess.call(["echo 0 > ~/.adc_watchdog_file"],shell=True) #stop LRS
+            print('stopping LRS ...')
+            time.sleep(1)
+        
     else:
         c.io.disable_packet_parsing = True
         c.io.enable_raw_file_writing = True
@@ -76,13 +87,15 @@ def data(c, runtime, packet, runtype, LRS=False, record_configs=True):
         c.io.join()
         rhdf5.to_rawfile(filename=c.io.raw_filename, \
                          io_version=pacman_msg_fmt.latest_version)
-        if record_configs:
-            c.loggertempA = larpix.logger.HDF5Logger(c.io.raw_filename)
-            c.loggertempA.record_configs(list(c.chips.values()))
+        #if record_configs:
+        #    c.loggertempA = larpix.logger.HDF5Logger(c.io.raw_filename)
+        #    c.loggertempA.record_configs(list(c.chips.values()))
         print('filename: ',c.io.raw_filename)
         run_start=time.time()
         c.start_listening()
-        if LRS: subprocess.call(["echo 1 > ~/.adc_watchdog_file"],shell=True)  #start LRS
+        if LRS: 
+            subprocess.call(["echo 1 > ~/.adc_watchdog_file"],shell=True)  #start LRS
+            print('starting LRS ...')
         data_rate_refresh = 5.
         data_rate_start = time.time()
         last_counter = 0
@@ -148,10 +161,11 @@ def reconcile_configuration_bool(c, chip_keys, verbose, \
 
 
 def reconcile_registers(c, chip_key_register_pairs, verbose, timeout=0.02, \
-                        connection_delay=0.01, n=1, n_verify=1):
+                        connection_delay=0.01, n=2, n_verify=2):
     ok, diff = c.verify_registers(chip_key_register_pairs, timeout=timeout, \
                                   connection_delay=connection_delay,
                                   n=n_verify)
+    #print(c.reads[-1])
     if diff!={}:
         flag = True
         for a in diff.keys():
@@ -316,7 +330,7 @@ def io_channel_list_to_tile(io_channel):
 
 def io_channel_to_root_chip(io_channel, asic_version):
     root_chips=[11,41,71,101]
-    if asic_version=='2b': root_chips=[21,41,71,91]
+    if asic_version=='2b': root_chips=[21,41,61,91]
     mapping={}
     for i in range(4, len(io_channel)+1, 4):
         ioc=io_channel[i-4:i]

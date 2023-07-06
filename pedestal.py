@@ -130,7 +130,7 @@ def main(LRS=_default_LRS, \
         for iog, ioch in c.network.items():
             pacman_base.enable_pacman_uart_from_io_channel(io, iog, \
                                                      ioch)
-        filename = utility_base.data(c, runtime, False, file_prefix, LRS)
+        filename = utility_base.data(c, runtime, True, file_prefix, LRS)
         shutil.move(current_dir_+filename, destination_dir_+filename)
         for iog, __ in c.network.items():
             io.set_reg(0x18, 0, io_group=iog)

@@ -52,7 +52,7 @@ def asic_test(c, chips_to_test, forbidden, threshold, runtime):
         c.multi_write_configuration(chip_register_pairs)
         ok, diff = c.enforce_configuration(chip_key, timeout=0.01, n=3, n_verify=3)
         if not ok: print('config error',diff)
-        c.logger.record_configs([c[chip_key]])
+        #c.logger.record_configs([c[chip_key]])
 
         utility_base.flush_data(c)
         c.logger.enable()
@@ -70,7 +70,7 @@ def asic_test(c, chips_to_test, forbidden, threshold, runtime):
         c.multi_write_configuration(chip_register_pairs)
         ok, diff = c.enforce_configuration(chip_key, timeout=0.01, n=10, n_verify=10)
         if not ok: print('config error resetting chip!',diff)
-        c.logger.record_configs([c[chip_key]])
+        #c.logger.record_configs([c[chip_key]])
         if not ok:
             print('!!!!! Stopping test here. Power down and restart !!!!!')
             return

@@ -17,9 +17,9 @@ import json
 import time
 from time import perf_counter
 import shutil
-
+from base import config_loader
 from RUNENV import *
-
+from tqdm import tqdm
 _default_file_prefix=None
 _default_disable_logger=True
 _default_verbose=False
@@ -47,7 +47,12 @@ def main(file_prefix=_default_file_prefix, \
    
     c = larpix.Controller()
     c.io = larpix.io.PACMAN_IO(relaxed=True)
-   
+    c.io.reset_larpix(length=4096*4, io_group=1) #2048 
+    time.sleep(4096*4*1e-6)
+    c.io.reset_larpix(length=4096*4, io_group=1) #2048 
+    time.sleep(4096*4*1e-6)
+
+
     if controller_config is None:
         now=time.strftime("%Y_%m_%d_%H_%M_%Z")
         config_name='controller-config-'+now+'.json'
@@ -63,27 +68,39 @@ def main(file_prefix=_default_file_prefix, \
     
          
     #_io_group_pacman_tile_={1: list(range(1, 9, 1)), 2:list(range(1,9,1))}
+    _io_group_pacman_tile_={1:[2]}
     for iog in io_group_pacman_tile_.keys():
        
         iog_ioc_cid=utility_base.iog_tile_to_iog_ioc_cid(io_group_pacman_tile_, io_group_asic_version_[iog])
-        #pacman_base.disable_all_pacman_uart(c.io, iog)
+        
+
+#        pacman_base.disable_all_pacman_uart(c.io, iog)
         #VERSION_SPECIFIC
-#        if _io_group_asic_version_[iog]=='2b': pacman_base.invert_pacman_uart(c.io, iog, _io_group_asic_version_[iog], \
-#                                       _io_group_pacman_tile_[iog]) 
+        if io_group_asic_version_[iog]=='2b': 
+            print('inverting io group {} tiles {}'.format(iog, io_group_pacman_tile_[iog]))
+            pacman_base.invert_pacman_uart(c.io, iog, io_group_asic_version_[iog], \
+                                       io_group_pacman_tile_[iog]) 
      #   if iog==1: continue
         #VERSION_SPECIFIC
-     #   pacman_base.power_up(c.io, iog, _iog_pacman_version_[iog], True, 
-     #                        _io_group_pacman_tile_[iog], _vdda_dac_, \
-     #                        _vddd_dac_, reset_length=1000000000) 
-#        pacman_base.power_up(c.io, iog, 'v1rev4', True, 
-#                             _io_group_pacman_tile_[iog], _vdda_dac_, \
-#                             _vddd_dac_, reset_length=300000000, \
-#                             vdda_step=1000, vddd_step=1000, ramp_wait=0.1,\
-#                             warm_wait=20)
-#    time.sleep(1)
-#    for iog in _io_group_pacman_tile_.keys():
-#        readback=pacman_base.power_readback(c.io, iog, _iog_pacman_version_[iog], \
-                                            #_io_group_pacman_tile_[iog])
+        _vdda_dac_=[0,46020,0,0,0,0,0,0]
+        _vddd_dac_=[0,32000,0,0,0,0,0,0]
+        #pacman_base.power_up(c.io, iog, iog_pacman_version_[iog], True, 
+        #                     io_group_pacman_tile_[iog], _vdda_dac_, \
+        #                      _vddd_dac_, reset_length=1000000) 
+        
+        
+        #replaced the value for _vdda_dac_, \
+        #replaced the value for _vddd_dac_
+
+        #pacman_base.power_up(c.io, iog, 'v1revS1', True, 
+        #                     io_group_pacman_tile_[iog], _vdda_dac_, 
+        #                     _vddd_dac_, reset_length=300000000,
+        #                     vdda_step=1000, vddd_step=1000, ramp_wait=0.5,
+        #                     warm_wait=20)
+        #time.sleep(2)
+    for iog in io_group_pacman_tile_.keys():
+        readback=pacman_base.power_readback(c.io, iog, iog_pacman_version_[iog], \
+                                            io_group_pacman_tile_[iog])
 
     #_io_group_pacman_tile_={2:[3]}
         
@@ -116,8 +133,8 @@ def main(file_prefix=_default_file_prefix, \
                                              tx_diff, tx_slice, r_term, i_rx)
 
             unconfigured=[]
-            for iog in _io_group_pacman_tile_.keys():
-                for tile in _io_group_pacman_tile_[iog]:
+            for iog in io_group_pacman_tile_.keys():
+                for tile in io_group_pacman_tile_[iog]:
                     out_of_network=network_base.iterate_waitlist(c, c.io, iog, \
                                                                  utility_base.tile_to_io_channel([tile]),
                                                                  verbose, \
@@ -126,7 +143,7 @@ def main(file_prefix=_default_file_prefix, \
                                                                  tx_diff, tx_slice, \
                                                                  r_term, i_rx)
                     unconfigured.extend(out_of_network)
-            network_file = network_base.write_network_to_file(c, file_prefix, _io_group_pacman_tile_,\
+            network_file = network_base.write_network_to_file(c, file_prefix, io_group_pacman_tile_,\
                                        unconfigured)
             shutil.move(current_dir_+network_file, destination_dir_+network_file)
 
@@ -136,6 +153,26 @@ def main(file_prefix=_default_file_prefix, \
                 c.reads=[]
                 shutil.move(current_dir_+fname, destination_dir_+fname)
             
+            
+            if not asic_config is None: config_loader.load_config_from_directory(c, asic_config)
+            
+            print(c.chips.keys())
+            last_io_channel = None
+            last_io_group = None
+            for chip in tqdm(c.chips):
+                ioch = chip.io_channel
+                iogr = chip.io_group
+                if not (last_io_channel==ioch and last_io_group==iogr):
+                    last_io_channel = ioch
+                    last_io_group = iogr
+                    pacman_base.enable_pacman_uart_from_io_channel(c.io, iogr, [ioch] )
+        #        print(chip, c[chip].config.channel_mask)
+                ok, diff = c.enforce_configuration(chip, n=5, n_verify=3, timeout=0.01)
+                if not ok:
+                    print(diff)
+                    #return
+            config_loader.write_config_to_file(c)
+
             return c, c.io
 
         elif io_group_asic_version_[iog]==2:  

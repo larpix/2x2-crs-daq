@@ -92,7 +92,7 @@ def setup_root(c, io, io_group, io_channel, chip_id, verbose, asic_version, \
     ok, diff = utility_base.reconcile_configuration(c, chip_key, verbose)
     if ok:
         if verbose: print(chip_key,' configured')
-        io.set_reg(0x18, 0, io_group=io_group)
+#        io.set_reg(0x18, 0, io_group=io_group)
         return chip_key
     if not ok:
         if verbose: print(chip_key,' NOT configured')
@@ -100,7 +100,7 @@ def setup_root(c, io, io_group, io_channel, chip_id, verbose, asic_version, \
         ok, diff = utility_base.reconcile_configuration(c, chip_key, \
                                                             verbose)
         c.remove_chip(chip_key)
-        io.set_reg(0x18, 0, io_group=io_group)
+#        io.set_reg(0x18, 0, io_group=io_group)
         return None
 
 async def async_setup_root(c, io, io_group, ioc, chip_id, verbose, \

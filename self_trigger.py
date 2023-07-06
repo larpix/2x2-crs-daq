@@ -101,7 +101,7 @@ def main(LRS=_default_LRS, \
 
 
     if disable_logger==False:
-        c.logger.record_configs(list(c.chips.values())) 
+        #c.logger.record_configs(list(c.chips.values())) 
         c.logger.flush()
         c.logger.disable()
         c.reads=[]
@@ -115,7 +115,7 @@ def main(LRS=_default_LRS, \
         
     ctr=0
     while ctr<file_count:
-        filename = utility_base.data(c, runtime, False, file_prefix, LRS)
+        filename = utility_base.data(c, runtime, True, file_prefix, LRS)
         shutil.move(current_dir_+filename, destination_dir_+filename)
         ctr+=1
     for iog, __ in c.network.items():

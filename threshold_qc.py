@@ -19,16 +19,16 @@ _default_pedestal_file=None
 _default_trim_sigma_file='channel_scale_factor.json'
 _default_disabled_list=None
 _default_noise_cut=3.
-_default_null_sample_time= 1. #0.5 #1 #0.25
+_default_null_sample_time= 0.5 #0.5 #1 #0.25
 _default_disable_rate=20.
 _default_set_rate=2.
 _default_cryo=False
 _default_vdda=1800
 _default_normalization=1.
 _default_verbose=False
-vref_dac = 223
-vcm_dac = 68
-nonrouted_channels=[6,7,8,9,22,23,24,25,38,39,40,54,55,56,57]
+vref_dac = 185
+vcm_dac = 50
+nonrouted_channels=[6]
 
 def measure_background_rate_increase_trim(c, extreme_edge_chip_keys, null_sample_time, set_rate, verbose):
     print('=====> Rate threshold: ',set_rate,' Hz')
@@ -48,7 +48,7 @@ def measure_background_rate_increase_trim(c, extreme_edge_chip_keys, null_sample
                 if chip_key not in c.chips: continue
                 c[chip_key].config.pixel_trim_dac[channel] = 31
                 c.write_configuration(chip_key,[channel])
-        c.reads = []
+        #c.reads = []
         if count == 0: flag = False
 
     return
@@ -58,6 +58,7 @@ def measure_background_rate_disable_csa(c, extreme_edge_chip_keys, csa_disable,
     print('=====> Rate threshold: ',disable_rate,' Hz')
     flag = True
     while flag:
+        #print(c.reads[-1])
         utility_base.flush_data(c)
         c.multi_read_configuration(extreme_edge_chip_keys, timeout=null_sample_time,message='rate check')
         triggered_channels = c.reads[-1].extract('chip_key','channel_id',packet_type=0)
@@ -461,15 +462,18 @@ def toggle_trim(c, channels, csa_disable, extreme_edge_chip_keys,
         l = list(c[chip_key].config.pixel_trim_dac)
         status[chip_key] = dict( pixel_trim=l, active=[True]*64, disable=[False]*64)
         for channel in range(64):
-            if channel in csa_disable[chip_key]:
-                status[chip_key]['active'][channel] = False
-                status[chip_key]['disable'][channel] = True
+            if chip_key in csa_disable.keys():
+                if channel in csa_disable[chip_key]:
+                    status[chip_key]['active'][channel] = False
+                    status[chip_key]['disable'][channel] = True
 
     iter_ctr = 0
     flag = True
+    max_its = 50
     while flag:
         timeStart = time.time()
         iter_ctr += 1
+        if iter_ctr > 50: flag = False
         utility_base.flush_data(c)
         c.multi_read_configuration(extreme_edge_chip_keys, timeout=null_sample_time,message='rate check')
         triggered_channels = c.reads[-1].extract('chip_key','channel_id',packet_type=0)
@@ -642,8 +646,11 @@ def main(controller_config=_default_controller_config,
                 null_sample_time, set_rate, verbose)
     timeEnd = time.time() - timeStart
     print('==> %.3f seconds --- toggle trim DACs'%timeEnd)
-    tile_id = 'tile-id-' + controller_config.split('-')[2]
-
+    tile_id = 'tile'
+    if not controller_config is None:
+        tile_id = 'tile-id-' + controller_config.split('-')[2]
+    else:
+        tile_id = 'tile-id-default'
     save_config_to_file(c, chip_keys, csa_disable, verbose, tile_id)
     timeEnd = time.time()-timeStart
     print('==> %.3f seconds --- saving to json config file \n'%timeEnd)
